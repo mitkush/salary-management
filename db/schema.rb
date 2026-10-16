@@ -10,9 +10,20 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_16_140036) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_16_151146) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "countries", force: :cascade do |t|
+    t.string "code", limit: 2, null: false
+    t.string "name", null: false
+    t.decimal "tax_rate", precision: 5, scale: 4, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["code"], name: "index_countries_on_code", unique: true
+    t.index ["name"], name: "index_countries_on_name", unique: true
+    t.check_constraint "tax_rate >= 0::numeric AND tax_rate <= 1::numeric", name: "countries_tax_rate_range"
+  end
 
   create_table "sessions", force: :cascade do |t|
     t.bigint "user_id", null: false
