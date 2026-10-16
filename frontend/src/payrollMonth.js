@@ -17,3 +17,14 @@ export function findRun(runs, month) {
 export function missingRunMessage(param) {
   return /^\d{4}-(0[1-9]|1[0-2])$/.test(param) ? `No payroll for ${monthLabel(param)}.` : 'No payroll for this month.'
 }
+
+export function recentMonths(today, count) {
+  return Array.from({ length: count }, (_, index) => {
+    const date = new Date(today.getFullYear(), today.getMonth() - index, 1)
+    return { value: toMonthParam(date), label: `${MONTH_NAMES[date.getMonth()].slice(0, 3)} ${date.getFullYear()}` }
+  })
+}
+
+export function previousMonth(today) {
+  return toMonthParam(new Date(today.getFullYear(), today.getMonth() - 1, 1))
+}
