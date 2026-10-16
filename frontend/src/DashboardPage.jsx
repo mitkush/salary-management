@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Alert, Button, Card, Col, DatePicker, Empty, Flex, Row, Segmented, Spin, Statistic, Typography } from 'antd'
+import { Alert, Button, Card, Col, Empty, Flex, Row, Segmented, Select, Spin, Statistic, Tooltip, Typography } from 'antd'
 import { Column, Line, Pie } from '@ant-design/charts'
 import { useSearchParams } from 'react-router'
 import { api } from './api.js'
 import EmployeeFilters from './EmployeeFilters.jsx'
 import { formatMoney } from './format.js'
 import { applyFilterChanges, clearFilters, hasFilters } from './searchState.js'
-import { monthLabel, toMonthParam } from './payrollMonth.js'
+import { monthLabel, previousMonth, recentMonths } from './payrollMonth.js'
 
 const VIEWS = [
   { value: 'country', label: 'By country' },
@@ -14,8 +14,17 @@ const VIEWS = [
 ]
 
 const STATS = [
-  { key: 'headcount', title: 'Headcount', format: (value) => value.toLocaleString('en-US') },
-  { key: 'total', title: 'Total salary cost', format: formatMoney },
+  {
+    key: 'headcount',
+    title: (
+      <Tooltip title="Active at month end. Payroll also includes leavers who worked part of the month.">
+        <span style={{ borderBottom: '1px dotted' }}>Headcount</span>
+      </Tooltip>
+    ),
+    format: (value) => value.toLocaleString('en-US'),
+  },
+  { key: 'total', title: 'Annual salary cost', format: formatMoney },
+  { key: 'monthly_cost', title: 'Monthly salary cost', format: formatMoney },
   { key: 'average', title: 'Average salary', format: formatMoney },
   { key: 'median', title: 'Median salary', format: formatMoney },
   { key: 'min', title: 'Lowest salary', format: formatMoney },
@@ -24,6 +33,7 @@ const STATS = [
 
 function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const [today] = useState(() => new Date())
   const [filterOptions, setFilterOptions] = useState({ countries: [], departments: [], job_titles: [] })
   const [optionsError, setOptionsError] = useState(null)
   const [result, setResult] = useState({ key: null, data: null, error: null })
@@ -58,10 +68,9 @@ function DashboardPage() {
     return () => { ignore = true }
   }, [trendsKey])
 
-  function changeMonth(date) {
+  function changeMonth(value) {
     const next = new URLSearchParams(searchParams)
-    if (date) next.set('as_of', toMonthParam(date.toDate()))
-    else next.delete('as_of')
+    next.set('as_of', value)
     setSearchParams(next)
   }
 
@@ -84,9 +93,14 @@ function DashboardPage() {
   return (
     <Flex vertical gap={16}>
       <Typography.Title level={3} style={{ margin: 0 }}>Dashboard</Typography.Title>
-      <Typography.Text type="secondary">Active employees at the end of the chosen month (or today for the current month). Salary means annual gross (base + allowances), in USD.</Typography.Text>
+      <Typography.Text type="secondary">Active employees at the chosen month's end. Salary is annual gross in USD.</Typography.Text>
       <Flex gap={8} wrap align="center">
-        <DatePicker picker="month" placeholder="Last month" onChange={changeMonth} />
+        <Select
+          value={query.as_of ?? previousMonth(today)}
+          options={recentMonths(today, 24)}
+          onChange={changeMonth}
+          style={{ width: 130 }}
+        />
         {result.data?.as_of && <Typography.Text type="secondary">As of {result.data.as_of}</Typography.Text>}
         <EmployeeFilters query={query} options={filterOptions} onChange={updateFilters} />
         {hasFilters(searchParams) && <Button onClick={() => setSearchParams(clearFilters(searchParams))}>Clear filters</Button>}
@@ -95,7 +109,7 @@ function DashboardPage() {
       <Spin spinning={loading && !error}>
         <Row gutter={[16, 16]}>
           {STATS.map((stat) => (
-            <Col key={stat.key} xs={12} md={8} xl={4}>
+            <Col key={stat.key} xs={12} md={8} lg={6} xxl={3}>
               <Card size="small">
                 <Statistic
                   title={stat.title}
@@ -106,50 +120,53 @@ function DashboardPage() {
             </Col>
           ))}
         </Row>
-        <Card
-          style={{ marginTop: 16 }}
-          title="Salary cost breakdown"
-          extra={<Segmented options={VIEWS} value={view} onChange={changeView} />}
-        >
-          {summary && summary.headcount === 0 ? (
-            <Empty description="No active employees match these filters." />
-          ) : (
-            <Pie
-              data={groups}
-              angleField="total"
-              colorField="name"
-              innerRadius={0.6}
-              height={360}
-              label={false}
-              legend={{ color: { position: 'right' } }}
-              tooltip={{
-                title: 'name',
-                items: [
-                  { field: 'total', name: 'Salary cost', valueFormatter: formatMoney },
-                  { field: 'share', name: 'Share', valueFormatter: (value) => `${value}%` },
-                ],
-              }}
-              annotations={[
-                {
-                  type: 'text',
-                  style: {
-                    text: summary ? `Total\n${formatMoney(summary.total)}` : '',
-                    x: '50%',
-                    y: '50%',
-                    textAlign: 'center',
-                    fontSize: 16,
-                    fontWeight: 'bold',
-                  },
-                },
-              ]}
-            />
-          )}
-        </Card>
       </Spin>
       {trends.error && <Alert type="error" message={trends.error} showIcon />}
-      <Spin spinning={trends.key !== trendsKey && !trends.error}>
-        <Row gutter={[16, 16]}>
-          <Col xs={24} lg={12}>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
+          <Spin spinning={loading && !error}>
+          <Card
+            title="Salary cost breakdown"
+            extra={<Segmented options={VIEWS} value={view} onChange={changeView} />}
+          >
+            {summary && summary.headcount === 0 ? (
+              <Empty description="No active employees match these filters." />
+            ) : (
+              <Pie
+                data={groups}
+                angleField="total"
+                colorField="name"
+                innerRadius={0.6}
+                height={300}
+                label={{ text: (slice) => `${slice.share}%`, position: 'outside' }}
+                legend={{ color: { position: 'right' } }}
+                tooltip={{
+                  title: 'name',
+                  items: [
+                    { field: 'total', name: 'Salary cost', valueFormatter: formatMoney },
+                    { field: 'share', name: 'Share', valueFormatter: (value) => `${value}%` },
+                  ],
+                }}
+                annotations={[
+                  {
+                    type: 'text',
+                    style: {
+                      text: summary ? `Total\n${formatMoney(summary.total)}` : '',
+                      x: '50%',
+                      y: '50%',
+                      textAlign: 'center',
+                      fontSize: 16,
+                      fontWeight: 'bold',
+                    },
+                  },
+                ]}
+              />
+            )}
+          </Card>
+          </Spin>
+        </Col>
+        <Col xs={24} lg={12}>
+          <Spin spinning={trends.key !== trendsKey && !trends.error}>
             <Card title="Monthly salary cost, last 12 months">
               <Column
                 data={trendMonths.map((m) => ({ month: monthLabel(m.month), cost: Number(m.monthly_cost) }))}
@@ -160,23 +177,23 @@ function DashboardPage() {
                 tooltip={{ items: [{ field: 'cost', name: 'Salary cost', valueFormatter: formatMoney }] }}
               />
             </Card>
-          </Col>
-          <Col xs={24} lg={12}>
-            <Card title="Joiners and leavers, last 12 months">
-              <Line
-                data={trendMonths.flatMap((m) => [
-                  { month: monthLabel(m.month), type: 'Joiners', count: m.joiners },
-                  { month: monthLabel(m.month), type: 'Leavers', count: m.leavers },
-                ])}
-                xField="month"
-                yField="count"
-                colorField="type"
-                height={300}
-                point={{ shapeField: 'circle', sizeField: 3 }}
-              />
-            </Card>
-          </Col>
-        </Row>
+          </Spin>
+        </Col>
+      </Row>
+      <Spin spinning={trends.key !== trendsKey && !trends.error}>
+        <Card title="Joiners and leavers, last 12 months">
+          <Line
+            data={trendMonths.flatMap((m) => [
+              { month: monthLabel(m.month), type: 'Joiners', count: m.joiners },
+              { month: monthLabel(m.month), type: 'Leavers', count: m.leavers },
+            ])}
+            xField="month"
+            yField="count"
+            colorField="type"
+            height={300}
+            point={{ shapeField: 'circle', sizeField: 3 }}
+          />
+        </Card>
       </Spin>
     </Flex>
   )
