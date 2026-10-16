@@ -45,7 +45,7 @@ Only check what the diff touches. Skip any area the PR doesn't change.
    - Clear names.
    - No dead or duplicated code.
    - Run rubocop and eslint if they're set up, and report only what fails.
-10. **Commits:** Conventional format on a single line, no trailers, one logical change per commit.
+10. **Commits:** Conventional format on a single line, no trailers, each commit a meaningful working piece.
 11. **Docs:** Does `docs/requirements.md`, the CLAUDE.md commands section, the README or `docs/ai-prompts.md` need updating?
 12. **Built-in reviews:** Run `/security-review`, then `/code-review` on the PR. Merge their findings into yours, drop duplicates, and verify each one before keeping it.
 

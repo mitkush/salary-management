@@ -93,3 +93,21 @@ The entries below are from the Claude Code session.
 - Business rules are read from `docs/requirements.md` instead of copied into the skill.
 - "Heavy calculations in SQL" was narrowed to dashboard aggregates. Per-employee payroll math stays in a Ruby service with BigDecimal, as long as it's batched.
 - Findings from the built-in reviews are deduplicated and verified before they're reported.
+
+## 9. Build skill
+**Prompt:** Add a project skill that every code change goes through:
+- read the requirements and ask if anything is unclear
+- reuse existing code (DRY, but no abstraction for a single use)
+- show a plan and wait for approval
+- branch from `origin/main`
+- TDD, showing each spec fail for the right reason
+- specs for every edge case
+- commit meaningful working pieces, only after my ok
+- add a log entry, then hand off to "create PR"
+
+Also align the commit-granularity wording across CLAUDE.md and the review skill.
+
+**Claude produced:** `.claude/skills/build/SKILL.md`, a workflow line in CLAUDE.md, and the wording fix. Additions to my prompt:
+- Setup and infra work isn't covered by the requirements, so it's planned from CLAUDE.md and still needs approval.
+- The plan has to flag anything needed outside the request.
+- The working tree must be clean before branching.

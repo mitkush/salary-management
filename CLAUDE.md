@@ -13,6 +13,7 @@ A salary management web app for ACME's HR Manager, covering about 10,000 employe
 - Keep it simple: no extra features, and no abstractions before they're needed.
 
 ## Workflow
+- Every code change goes through the `build` skill (`.claude/skills/build/SKILL.md`).
 - Always TDD: write a failing spec first, then the minimal code to pass it, then refactor.
 - For anything non-trivial, show me the plan before writing code.
 - Work in small steps.
@@ -51,7 +52,7 @@ A salary management web app for ACME's HR Manager, covering about 10,000 employe
 - Lint: `TBD`
 
 ## Git
-- Use Conventional Commits: `type(scope): message`, where type is one of `feat`, `fix`, `test`, `refactor`, `docs`, `chore`, `ci` or `build`. Keep each message to a single line, with no co-author line or any other trailer.
+- Use Conventional Commits: `type(scope): message`, where type is one of `feat`, `fix`, `test`, `refactor`, `docs`, `chore`, `ci` or `build`. Keep each message to a single line, with no co-author line or any other trailer. Each commit should be a meaningful working piece.
 - Put every piece of work on its own branch, e.g. `chore/ai-setup` or `feat/salary-revisions`. No direct commits on `main`.
 - PRs are merged with a merge commit, not squashed, so every commit stays in the history.
 - Never commit without my approval.
