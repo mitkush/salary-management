@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findRun, monthLabel, toMonthParam } from './payrollMonth.js'
+import { findRun, missingRunMessage, monthLabel, toMonthParam } from './payrollMonth.js'
 
 describe('payroll month helpers', () => {
   it('turns a date into the API month parameter', () => {
@@ -16,5 +16,10 @@ describe('payroll month helpers', () => {
 
     expect(findRun(runs, '2026-09')).toEqual({ month: '2026-09' })
     expect(findRun(runs, '2026-11')).toBeUndefined()
+  })
+
+  it('explains when the month in the URL has no payroll run', () => {
+    expect(missingRunMessage('2026-01')).toBe('No payroll for January 2026.')
+    expect(missingRunMessage('abc')).toBe('No payroll for this month.')
   })
 })
