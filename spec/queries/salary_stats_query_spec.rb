@@ -89,6 +89,12 @@ RSpec.describe SalaryStatsQuery do
       expect(groups.map { |g| [ g[:name], g[:total] ] }).to eq([ [ "Engineering", BigDecimal("60000") ], [ "Finance", BigDecimal("50000") ] ])
     end
 
+    it "gives each group's share of the total cost as a percentage, rounded to 2 decimals" do
+      groups = described_class.new(group_by: "country").groups
+
+      expect(groups.map { |g| g[:share] }).to eq([ BigDecimal("64.52"), BigDecimal("35.48") ])
+    end
+
     it "rejects an unknown grouping" do
       expect { described_class.new(group_by: "job_title; DROP TABLE employees").groups }.to raise_error(ArgumentError)
     end
