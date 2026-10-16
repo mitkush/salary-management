@@ -141,9 +141,11 @@ The API returns JSON under `/api`. Every endpoint except `GET` and `POST /api/se
 | GET / PATCH | `/api/countries`, `/api/countries/:id` | List countries with `tax_rate_percent` / update it with `{ country: { tax_rate_percent } }`. The API works in percent (0–100, at most 2 decimals) and stores the 0–1 fraction. Invalid values return 422 under `tax_rate_percent`. |
 | GET | `/api/payroll_runs` | List runs, with a `locked` flag on each and an `outdated` flag on the open run |
 | PUT | `/api/payroll_runs/:month` | Generate, or recalculate if the run exists (`month` = `2026-10`) |
-| GET | `/api/payroll_runs/:month/entries?page=` | Paginated entries, with the bank account masked |
+| GET | `/api/payroll_runs/:month/entries?page=` | Paginated entries sorted by employee code, with the employee's code and name, the bank account masked, and `tax_rate_percent` |
 | PATCH | `/api/payroll_runs/:month/entries/:id` | Set bonus, one-time deduction and note (open month only). Recalculates that entry. |
-| GET | `/api/payroll_runs/:month/export` | Download the Excel file, with full bank account numbers |
+| GET | `/api/payroll_runs/:month/export` | Download `payroll-YYYY-MM.xlsx`, sorted by employee code, with full bank account numbers. An unknown month returns 404. |
+
+A month that isn't in `YYYY-MM` form returns 400. A future, skipped or locked month returns 409, and so does changing an entry in a locked month.
 
 **Errors** all use one format: `{ "error": { "code": "...", "message": "...", "details": { "field": ["..."] } } }`.
 
@@ -186,7 +188,7 @@ The UI only formats and displays values. Every amount comes from the API.
 
 **Outdated check (open month only)**
 
-`PayrollRun#outdated?` is a single `EXISTS` query that is true if, after `generated_at`:
+`PayrollRun#outdated?` is three small `EXISTS` queries, true if, after `generated_at`:
 - a salary revision was created with `effective_on <= month end`, or
 - an employee was created or updated (terminated), or
 - a country's tax rate was updated
@@ -230,9 +232,8 @@ It's a little coarse (e.g. a termination in a later month also triggers it), but
 - `db/seeds/employee_seeder.rb` creates 6 countries and 10,000 employees with about 15,000 revisions, using a fixed random seed. Dates are calculated from today, so the data is the same for every run on the same day. It's bulk-inserted and takes about 2 seconds.
 - `EXPLAIN ANALYZE` of the dashboard median query on the seeded data took 9 ms. It reads the current revisions through the unique `(employee_id, effective_on)` index. Before Postgres had refreshed its statistics after the bulk insert, the same query took 28 ms.
 - Confirmed: Rails 8.1 returns the generated `annual_gross` right after insert, so no reload is needed.
-
-**Follow-ups:**
-- Payroll feature: add the locked-month check to termination (`Employee#terminate!`). It needs `payroll_runs`, which doesn't exist yet.
+- Confirmed: `upsert_all` with `update_only` keeps HR's bonus, deduction and note when a month is recalculated (covered by a spec).
+- Payroll on the 10k seed: generating a month (9,329 entries) took 1.3 s, recalculating it 1.1 s, and exporting it 0.7 s (669 KB).
 
 **To confirm at setup:**
 - Gems for Excel read/write and pagination. Each needs approval.
@@ -241,4 +242,3 @@ It's a little coarse (e.g. a termination in a later month also triggers it), but
 - Deploy: set `HR_PASSWORD` on the VM. The default `password` is public in the README.
 - Deploy: set Caddy's `request_body max_size` (e.g. 6 MB). Rails only checks the 5 MB import limit after the whole upload has arrived.
 - Deploy: leave `WEB_CONCURRENCY` unset, so Puma runs one process. The login rate limit is counted in memory per process, so each extra worker would allow another 10 attempts.
-- Whether `upsert_all` with `update_only` in the installed Rails version keeps HR's bonus, deduction and note untouched on recalculation.
