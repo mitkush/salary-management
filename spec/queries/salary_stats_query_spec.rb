@@ -22,7 +22,7 @@ RSpec.describe SalaryStatsQuery do
     employee(gross: "100000.00")
 
     expect(summary).to eq(
-      headcount: 3, total: BigDecimal("240000"), min: BigDecimal("60000"), max: BigDecimal("100000"),
+      headcount: 3, total: BigDecimal("240000"), monthly_cost: BigDecimal("20000"), min: BigDecimal("60000"), max: BigDecimal("100000"),
       average: BigDecimal("80000"), median: BigDecimal("80000")
     )
   end
@@ -32,6 +32,12 @@ RSpec.describe SalaryStatsQuery do
     employee(gross: "80000.01")
 
     expect(summary).to include(median: BigDecimal("70000.01"), average: BigDecimal("70000.01"))
+  end
+
+  it "gives the monthly cost as annual total / 12, rounded to cents" do
+    employee(gross: "100000.00")
+
+    expect(summary[:monthly_cost]).to eq(BigDecimal("8333.33"))
   end
 
   it "counts only active employees" do
@@ -64,7 +70,22 @@ RSpec.describe SalaryStatsQuery do
   end
 
   it "returns zero headcount and total, and no other values, when nobody matches" do
-    expect(summary).to eq(headcount: 0, total: BigDecimal("0"), min: nil, max: nil, average: nil, median: nil)
+    expect(summary).to eq(headcount: 0, total: BigDecimal("0"), monthly_cost: BigDecimal("0"), min: nil, max: nil, average: nil, median: nil)
+  end
+
+  describe "as of a past date" do
+    let(:as_of) { Date.new(2026, 9, 30) }
+
+    it "counts who was active on that date, at the salary in effect then" do
+      raised_later = employee(gross: "60000.00", joined_on: Date.new(2025, 1, 1))
+      create(:salary_revision, employee: raised_later, effective_on: Date.new(2026, 10, 1), annual_base: "99000.00",
+        annual_allowances: "0.00", reason: "increment")
+      employee(gross: "40000.00", joined_on: Date.new(2025, 1, 1), terminated_on: Date.new(2026, 10, 5))
+      employee(gross: "70000.00", joined_on: Date.new(2026, 10, 1))
+      employee(gross: "80000.00", joined_on: Date.new(2025, 1, 1), terminated_on: Date.new(2026, 9, 29))
+
+      expect(described_class.new(as_of: as_of).summary).to include(headcount: 2, total: BigDecimal("100000"))
+    end
   end
 
   describe "#groups" do

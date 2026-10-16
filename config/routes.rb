@@ -12,7 +12,9 @@ Rails.application.routes.draw do
       resource :termination, only: %i[create]
     end
     resource :filter_options, only: %i[show]
-    resource :insights, only: %i[show]
+    resource :insights, only: %i[show] do
+      get :trends
+    end
     resources :countries, only: %i[index update]
     resources :payroll_runs, only: %i[index update], param: :month do
       get :export, on: :member

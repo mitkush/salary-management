@@ -58,6 +58,20 @@ RSpec.describe Employee, type: :model do
     end
   end
 
+  describe ".with_status on a given date" do
+    let(:month_end) { Date.new(2026, 9, 30) }
+    let!(:joins_on_month_end) { create(:employee, joined_on: month_end) }
+    let!(:leaves_on_month_end) { create(:employee, joined_on: Date.new(2025, 1, 1), terminated_on: month_end) }
+    let!(:left_day_before) { create(:employee, joined_on: Date.new(2025, 1, 1), terminated_on: month_end - 1) }
+    let!(:joins_after) { create(:employee, joined_on: month_end + 1) }
+
+    it "uses that date instead of today" do
+      expect(Employee.with_status("active", on: month_end)).to contain_exactly(joins_on_month_end, leaves_on_month_end)
+      expect(Employee.with_status("terminated", on: month_end)).to contain_exactly(left_day_before)
+      expect(Employee.with_status("upcoming", on: month_end)).to contain_exactly(joins_after)
+    end
+  end
+
   describe "#masked_bank_account" do
     it "shows only the last 4 digits" do
       expect(build(:employee, bank_account_number: "123456789876").masked_bank_account).to eq("•••• 9876")

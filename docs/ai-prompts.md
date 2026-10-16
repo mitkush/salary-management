@@ -452,3 +452,29 @@ Split into two PRs (not stacked), backend first.
 - `body { margin: 0 }` in `index.html`.
 - `clearFilters` and `hasFilters` (test-first). They keep the page size and the dashboard view.
 - A "Clear filters" button on the employee list and the dashboard. It shows only when a filter is set, and on the employee list it also cancels a pending delayed search.
+
+## 25. Dashboard as of a month, with trends
+**Prompt:** The dashboard gets a month picker:
+- data is shown as of that month's end, defaulting to the previous month, reusing the status and revision-on-date logic
+- a 12-month column chart of salary cost and a 12-month line chart of joiners against leavers
+- the donut stays, and nothing is calculated in the UI
+
+**I decided:**
+- Monthly cost is annual gross / 12.
+- The current month is allowed and uses today, not its month end, while future months return 400.
+
+**Claude produced, test-first pairs:**
+- `Employee.with_status(…, on:)` and `SalaryStatsQuery(as_of:)`, both reusing `current_for(on:)`. Specs cover joining or leaving on the month end and a raise after it.
+- `SalaryTrendsQuery`: 12 month-end points, each using the stats query (352 ms on the 10k seed), plus joiners and leavers grouped in SQL.
+- An `as_of` parameter on `/api/insights` and a new `/api/insights/trends`. Month parsing moved into a shared `Api::MonthParam` (a refactor).
+- A frontend fix: the URL helpers dropped `as_of` when filters changed. It's now kept (test-first).
+- The month picker, the "As of" date from the API, and the column and line charts.
+
+**Spec changes:** the existing spec that checks the exact insights response now includes the new `as_of` field, a deliberate change to the response format.
+- **Follow-up fixes in the same PR:**
+  - **Cards:** "Annual salary cost", plus a new "Monthly salary cost" card. The monthly figure is an API `monthly_cost` computed in SQL, which the trends query now reuses (test-first).
+  - **Month selector:** a select of the last 24 months showing "Sep 2026". It replaces the date picker, which would have needed `dayjs` as a new direct package.
+  - **Headcount tooltip:** explains that payroll also includes leavers who worked part of the month.
+  - **Donut:** percentages from the API's `share`.
+  - **Layout:** the donut and the column chart side by side, the line chart below.
+  - **Description:** a shorter line.

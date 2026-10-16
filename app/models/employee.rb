@@ -7,8 +7,8 @@ class Employee < ApplicationRecord
   validates :employee_code, presence: true, uniqueness: true
   validates :full_name, :department, :job_title, :bank_account_number, :joined_on, presence: true
 
-  scope :with_status, ->(status) {
-    today = Date.current
+  scope :with_status, ->(status, on: Date.current) {
+    today = on
     case status
     when "active" then where(joined_on: ..today).where("terminated_on IS NULL OR terminated_on >= ?", today)
     when "upcoming" then where(joined_on: today.next_day..)
