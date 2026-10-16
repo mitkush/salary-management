@@ -30,4 +30,49 @@ RSpec.describe PayrollRun, type: :model do
       expect(described_class.locked?(Date.new(2026, 10, 1))).to be(false)
     end
   end
+
+  describe "#outdated?" do
+    around { |example| travel_to(Time.zone.local(2026, 10, 16, 12)) { example.run } }
+
+    let(:india) { create(:country, tax_rate: "0.2000") }
+    let!(:person) { create(:employee, country: india, joined_on: Date.new(2025, 1, 1)) }
+    let!(:initial) { create(:salary_revision, employee: person) }
+    let(:run) { Payroll::Generator.call(Date.new(2026, 10, 1)) }
+
+    before do
+      run
+      travel 1.minute
+    end
+
+    it "is false right after generating" do
+      expect(run.outdated?).to be(false)
+    end
+
+    it "is true after a revision effective in or before the month is added" do
+      create(:salary_revision, employee: person, effective_on: Date.new(2026, 10, 31), reason: "increment")
+
+      expect(run.outdated?).to be(true)
+    end
+
+    it "stays false for a revision that starts after the month" do
+      create(:salary_revision, employee: person, effective_on: Date.new(2026, 11, 1), reason: "increment")
+
+      expect(run.outdated?).to be(false)
+    end
+
+    it "is true after a termination, a new employee or a tax rate change" do
+      person.terminate!(Date.new(2026, 10, 20))
+      expect(run.outdated?).to be(true)
+    end
+
+    it "is true after a new employee is added" do
+      create(:employee, country: india)
+      expect(run.outdated?).to be(true)
+    end
+
+    it "is true after a tax rate change" do
+      india.update!(tax_rate_percent: "25")
+      expect(run.outdated?).to be(true)
+    end
+  end
 end
