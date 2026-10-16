@@ -28,7 +28,7 @@ Don't write code until I say ok.
 
 ## 4. Branch
 - `git status` must be clean.
-- Run `git fetch origin`. If you're already on the right branch for this work, continue there. Otherwise run `git switch -c <prefix>/<short-name> origin/main`, using a prefix that matches the commit type: `feat/`, `fix/`, `refactor/`, `test/`, `chore/`, `docs/`, `ci/` or `build/`.
+- Run `git fetch origin`. If you're already on the right branch for this work, continue there. Otherwise run `git switch -c <prefix>/<short-name> --no-track origin/main`, so the new branch doesn't track `main`. Use a prefix that matches the commit type: `feat/`, `fix/`, `refactor/`, `test/`, `chore/`, `docs/`, `ci/` or `build/`.
 
 ## 5. TDD, one behaviour at a time
 1. Write the failing spec.

@@ -111,3 +111,46 @@ Also align the commit-granularity wording across CLAUDE.md and the review skill.
 - Setup and infra work isn't covered by the requirements, so it's planned from CLAUDE.md and still needs approval.
 - The plan has to flag anything needed outside the request.
 - The working tree must be clean before branching.
+
+## 10. Architecture doc
+**Prompt:** Write `docs/architecture.md` with Mermaid diagrams, covering the system, data model, services, API, pages, flows and key decisions. Before writing, give opinions on three questions: department and job title as tables or strings, how to calculate the median, and anything hard to model.
+
+**Claude answered:**
+- Use strings for department and job title, and a table for country (because of the tax rate).
+- Calculate the median with `percentile_cont` in Postgres, with no stored current salary, and check it with `EXPLAIN ANALYZE` after seeding.
+- Eight modelling points, including:
+  - use the revision in effect on the last day worked
+  - round, then calculate net from the rounded values
+  - unique `(employee_id, effective_on)`
+  - derive locked months instead of storing a flag
+  - a check that the payroll month is the 1st
+
+**I decided:**
+- Accepted all of the above.
+- Added a rule that no revision can be effective after `terminated_on`.
+- Payroll rules stay in Ruby with BigDecimal, and dashboard aggregates go in one SQL query object.
+- `annual_gross` is a generated column, so it's defined in one place.
+
+**I changed after reading the doc:**
+- A future revision must not block termination. Claude had added that rule, but it would have left HR stuck with a revision they can't delete.
+- Revisions need a reason.
+- Removed the `one_time_adjustments` table. The bonus, deduction and note now live on payroll entries:
+  - they're edited on the Payroll page, for the open month only
+  - saving one recalculates only that entry
+  - recalculating the month keeps HR's values
+- Entries no longer copy the revision amounts or store taxable and days in the month, because those can be derived.
+- The export has monthly gross and deductions (so the columns add up), plus days worked and the note.
+- Recalculating only adds newly eligible employees. Claude pointed out that removing entries could never happen under our rules, and if it did run it would delete HR's bonus and note.
+- An "Outdated" badge on the Payroll page when revisions, terminations, tax rates or imported employees changed after the last generation. Claude extended my idea (revisions and terminations) to also cover tax rates and imports, since both change the payroll too.
+
+## 11. Fixes from the PR 2 review
+**Prompt:** Fix the four findings from `review PR 2`, and let the review skill skip the built-in reviews on docs-only PRs.
+
+**Claude produced:**
+- A new payroll run must be exactly the month after the latest run (the first run can be any month that isn't in the future), so a month can't be skipped and left unpaid.
+- Bank account numbers are masked in payroll entries too. The full number appears only in the export.
+- "Active" now requires `joined_on <= today`, so future joiners don't inflate the headcount.
+- Import accepts only `.xlsx` files up to 5 MB.
+- The review skill skips `/security-review` and `/code-review` when every changed file is `.md`, and says so in the result.
+
+**I changed:** nothing. I accepted all four findings as reported, and specified the 5 MB limit.
