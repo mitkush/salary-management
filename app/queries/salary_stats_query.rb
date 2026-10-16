@@ -12,7 +12,8 @@ class SalaryStatsQuery
 
   SHARE = Arel.sql("ROUND(100.0 * SUM(current.annual_gross) / NULLIF(SUM(SUM(current.annual_gross)) OVER (), 0), 2)")
 
-  def initialize(country_id: nil, department: nil, job_title: nil, group_by: nil)
+  def initialize(country_id: nil, department: nil, job_title: nil, group_by: nil, as_of: Date.current)
+    @as_of = as_of
     @filters = { country_id: country_id, department: department, job_title: job_title }.compact_blank
     @group_by = group_by
   end
@@ -38,6 +39,6 @@ class SalaryStatsQuery
     end
 
     def current_revisions
-      SalaryRevision.current_for(Employee.with_status("active").where(@filters).select(:id))
+      SalaryRevision.current_for(Employee.with_status("active", on: @as_of).where(@filters).select(:id), on: @as_of)
     end
 end
