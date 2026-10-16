@@ -106,6 +106,26 @@ RSpec.describe "API employees", type: :request do
         expect(json["data"].map { |e| e["id"] }).to eq([ priya.id ])
       end
 
+      it "ignores a search that isn't plain text instead of crashing" do
+        employee_with_salary
+
+        get "/api/employees", params: { q: [ "x" ] }
+
+        expect(response).to have_http_status(:ok)
+        expect(json["meta"]["total"]).to eq(1)
+      end
+
+      it "handles malformed and huge page numbers without crashing" do
+        get "/api/employees", params: { page: [ "2" ], per_page: [ "5" ] }
+        expect(response).to have_http_status(:ok)
+        expect(json["meta"]).to include("page" => 1, "per_page" => 25)
+
+        get "/api/employees", params: { page: "99999999999999999999" }
+        expect(response).to have_http_status(:ok)
+        expect(json["meta"]["page"]).to eq(1_000_000)
+        expect(json["data"]).to eq([])
+      end
+
       it "uses the same number of queries for 5 employees as for 25" do
         5.times { employee_with_salary }
         query_count = -> { count_queries { get "/api/employees", as: :json } }
