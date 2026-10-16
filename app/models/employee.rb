@@ -33,7 +33,7 @@ class Employee < ApplicationRecord
   end
 
   def current_revision
-    salary_revisions.where(effective_on: ..Date.current).order(effective_on: :desc).first
+    salary_revisions.where(effective_on: ..[ Date.current, terminated_on ].compact.min).order(effective_on: :desc).first
   end
 
   def masked_bank_account
