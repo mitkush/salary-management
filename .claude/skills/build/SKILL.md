@@ -39,7 +39,10 @@ Don't write code until I say ok.
 Edge cases from the requirements need their own specs wherever they apply: month end, Feb in a leap year, joining or leaving on the 1st or the last day, negative net, locked months, nil or empty data.
 
 ## 6. Commit
-- Commit when a meaningful piece is working, e.g. a model with its validations, or a service with its specs. Don't commit after every small step. Each commit should be a meaningful working piece.
+- Commit in pairs, one pair per meaningful piece (e.g. a model with its validations, or a service with its specs):
+  1. `test:` with the failing specs, after showing they fail for the right reason.
+  2. `feat:` or `fix:` with the code that makes them pass.
+- Tests pass before every commit, except a `test:` commit with failing specs that the very next `feat:`/`fix:` commit makes pass. Don't commit after every small step.
 - Before committing:
   - run the full suite
   - run rubocop and oxlint

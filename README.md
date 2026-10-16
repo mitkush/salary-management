@@ -18,6 +18,8 @@ docker compose up --build
 
 Open http://localhost:3000. On the first start the database is created, migrated and seeded automatically.
 
+**Demo login:** `hr@example.com` / `password`. Change it with `HR_EMAIL` and `HR_PASSWORD` before seeding.
+
 Run the test suite in Docker, against its own test database:
 
 ```sh
@@ -36,7 +38,7 @@ npm --prefix frontend ci      # frontend packages
 bin/dev                       # Rails on :3000, Vite on :5173
 ```
 
-Open http://localhost:5173. Vite proxies `/api` to Rails.
+Open http://localhost:5173. Vite proxies `/api` to Rails. Log in with the demo login above.
 
 ## Tests and checks
 

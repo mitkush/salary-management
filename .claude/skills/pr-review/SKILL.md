@@ -45,7 +45,7 @@ Only check what the diff touches. Skip any area the PR doesn't change.
    - Clear names.
    - No dead or duplicated code.
    - Run rubocop and oxlint (`npm --prefix frontend run lint`), and report only what fails.
-10. **Commits:** Conventional format on a single line, no trailers, each commit a meaningful working piece.
+10. **Commits:** Conventional format on a single line, no trailers, each commit a meaningful working piece. Tests pass before every commit, except a `test:` commit with failing specs that the very next `feat:`/`fix:` commit makes pass. Flag any red commit that isn't such a `test:` commit.
 11. **Docs:** Does `docs/requirements.md`, the CLAUDE.md commands section, the README or `docs/ai-prompts.md` need updating?
 12. **Built-in reviews:** Run `/security-review`, then `/code-review` on the PR. Merge their findings into yours, drop duplicates, and verify each one before keeping it. If every changed file is `.md` (a docs-only PR), skip both and say so under **Tests**, with the reason: `/security-review` excludes Markdown and `/code-review` targets code bugs.
 

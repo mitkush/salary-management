@@ -57,11 +57,13 @@ The HR Manager. There is a single HR login and no other roles.
 | Real tax rules (slabs, exemptions), pre-tax deductions | These differ by country. A flat rate is enough to show gross vs. net. |
 | Proration by working days | This would need a holiday calendar for each country. Calendar days are used instead. |
 | Encrypting bank account numbers at rest | Only HR uses the app and the UI masks the number. Encryption would add key management to the deployment. |
+| Roles, multiple users and employee self-service | There is one HR user. The login account is separate from the employee records, and employees don't log in. |
 | Approval workflows, payslips/PDF, leave/attendance | These belong to a full HRMS and aren't needed for salary management. |
 | Background jobs for import | At this data size, a synchronous import is fast enough. |
 
 ## Known limitations
 - Employee details can't be changed after import.
+- The HR login isn't linked to an employee record, so HR can change any salary, including their own.
 - Termination can't be undone, and its date can't be changed.
 - If a raise is backdated into a locked month, that month's payroll stays as it was paid. The app doesn't calculate arrears automatically. HR adds the difference as a one-time bonus in an open month.
 - The latest month can be recalculated even after it has been paid. Until the next month's run exists, the confirmation dialog is the only safeguard.
