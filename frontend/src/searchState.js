@@ -38,3 +38,13 @@ export function committedSearch(value) {
 export function searchBoxText(search, urlQ) {
   return search.forQ === urlQ ? search.text : urlQ
 }
+
+const KEPT_ON_CLEAR = ['per_page', 'view']
+
+export function clearFilters(params) {
+  return new URLSearchParams([...params].filter(([key]) => KEPT_ON_CLEAR.includes(key)))
+}
+
+export function hasFilters(params) {
+  return [...params].some(([key, value]) => KEPT_ON_FILTER_CHANGE.includes(key) && !KEPT_ON_CLEAR.includes(key) && value)
+}
