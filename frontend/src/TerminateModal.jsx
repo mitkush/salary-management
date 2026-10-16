@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Alert, DatePicker, Form, Modal, Typography } from 'antd'
 import { api } from './api.js'
+import { formErrorUpdate } from './formErrors.js'
+
+const FIELD_NAMES = ['terminated_on']
 
 function TerminateModal({ employee, open, onClose, onSaved }) {
   const [form] = Form.useForm()
@@ -24,8 +27,9 @@ function TerminateModal({ employee, open, onClose, onSaved }) {
       form.resetFields()
       onSaved()
     } catch (err) {
-      if (err.fieldErrors().length > 0) form.setFields(err.fieldErrors())
-      else setError(err.message)
+      const { fields, message } = formErrorUpdate(err, FIELD_NAMES)
+      form.setFields(fields)
+      setError(message)
     } finally {
       setSaving(false)
     }

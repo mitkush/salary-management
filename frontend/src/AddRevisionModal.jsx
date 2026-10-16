@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { Alert, DatePicker, Form, InputNumber, Modal, Select, Typography } from 'antd'
 import { api } from './api.js'
+import { formErrorUpdate } from './formErrors.js'
 
 const REASONS = ['increment', 'promotion', 'correction', 'other'].map((reason) => ({ value: reason, label: reason }))
 const amountRules = [{ required: true, message: 'Required' }]
+
+const FIELD_NAMES = ['effective_on', 'annual_base', 'annual_allowances', 'annual_deductions', 'reason']
 
 function AddRevisionModal({ employeeId, open, onClose, onSaved }) {
   const [form] = Form.useForm()
@@ -27,8 +30,9 @@ function AddRevisionModal({ employeeId, open, onClose, onSaved }) {
       form.resetFields()
       onSaved()
     } catch (err) {
-      if (err.fieldErrors().length > 0) form.setFields(err.fieldErrors())
-      else setError(err.message)
+      const { fields, message } = formErrorUpdate(err, FIELD_NAMES)
+      form.setFields(fields)
+      setError(message)
     } finally {
       setSaving(false)
     }
