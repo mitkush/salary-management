@@ -98,7 +98,7 @@ All money columns are `decimal(12,2)`. Every column is `NOT NULL` unless marked 
 `payroll_entries` is the only stored payroll. It doesn't copy the revision's amounts, because revisions never change and the entry already has `salary_revision_id`. Taxable (`monthly_gross + bonus`) and days in the month (from the run's month) are calculated when needed, so they aren't stored.
 
 **Derived values, not stored:**
-- **Status:** an employee is active if `terminated_on` is null or on or after today.
+- **Status:** an employee is active if `joined_on <= today` and (`terminated_on` is null or `>= today`). This keeps future joiners out of both the headcount and the salary stats.
 - **Locked month:** a month is locked if it's earlier than `MAX(payroll_runs.month)`.
 - **Current salary:** the latest revision with `effective_on <= today`.
 
@@ -131,7 +131,7 @@ The API returns JSON under `/api`. Every endpoint except login requires a sessio
 | GET / PATCH | `/api/countries`, `/api/countries/:id` | List countries and tax rates / update a tax rate |
 | GET | `/api/payroll_runs` | List runs, with a `locked` flag on each and an `outdated` flag on the open run |
 | PUT | `/api/payroll_runs/:month` | Generate, or recalculate if the run exists (`month` = `2026-10`) |
-| GET | `/api/payroll_runs/:month/entries?page=` | Paginated entries |
+| GET | `/api/payroll_runs/:month/entries?page=` | Paginated entries, with the bank account masked |
 | PATCH | `/api/payroll_runs/:month/entries/:id` | Set bonus, one-time deduction and note (open month only). Recalculates that entry. |
 | GET | `/api/payroll_runs/:month/export` | Download the Excel file, with full bank account numbers |
 
@@ -141,7 +141,7 @@ The API returns JSON under `/api`. Every endpoint except login requires a sessio
 |---|---|
 | 401 | Not logged in |
 | 404 | Not found |
-| 409 | A locked month, or a run for a future month |
+| 409 | A locked month, a run for a future month, or a skipped month |
 | 422 | A validation error |
 
 **Lists** return `{ "data": [...], "meta": { "page", "per_page", "total" } }`.
@@ -164,7 +164,7 @@ The UI only formats and displays values. Every amount comes from the API.
 
 **Generate or recalculate payroll**
 1. HR picks a month. If a run already exists for the latest month, the UI asks for confirmation before recalculating.
-2. `PUT /api/payroll_runs/:month` is called. The month is rejected if it's in the future or locked.
+2. `PUT /api/payroll_runs/:month` is called. The month is rejected if it's in the future, if it's locked, or if it's a new run that isn't exactly the month after the latest run. The first run ever can be for any month that isn't in the future.
 3. In one transaction:
    - create the run if it doesn't exist
    - load the employees eligible that month (`joined_on <= month end` and (`terminated_on` is null or `>= month start`)) in batches, with the revision in effect on each employee's last day worked
@@ -187,7 +187,7 @@ It's a little coarse (e.g. a termination in a later month also triggers it), but
 3. Settle runs on the entry's stored monthly gross, monthly deductions and tax rate, and saves tax and net. Nothing else is recalculated.
 
 **Excel import**
-1. Upload the file to `POST /api/employee_imports`.
+1. Upload the file to `POST /api/employee_imports`. Anything that isn't an `.xlsx` file, or is over 5 MB, is rejected with a 422 before parsing.
 2. Validate each row: required fields, the country exists, dates and amounts are valid, the code is unique in the DB and within the file. Department and job title are trimmed.
 3. Insert each valid row's employee and first revision (effective `joined_on`, reason `initial`). Report skipped rows ("already exists") and failed rows with their row number and reason.
 

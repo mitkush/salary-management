@@ -13,12 +13,12 @@ The HR Manager. There is a single HR login and no other roles.
    - can't share an effective date with another revision for the same employee
    - can be dated in the future
 
-   `terminated_on` is the employee's last working day, and they count as terminated from the day after. It can't be earlier than `joined_on`, and it can't fall in a locked month. A future revision doesn't block termination. Any revision dated after `terminated_on` simply never applies. Bank account numbers show only their last 4 digits in the UI.
+   `terminated_on` is the employee's last working day, and they count as terminated from the day after. It can't be earlier than `joined_on`, and it can't fall in a locked month. A future revision doesn't block termination. Any revision dated after `terminated_on` simply never applies. Bank account numbers show only their last 4 digits everywhere in the UI and API, including payroll entries. The full number appears only in the payroll export.
 2. **Insights dashboard.** Shows min, max, average and median salary, headcount and total salary cost, filterable by country, department and job title. Only active employees are counted.
-3. **Excel import.** Synchronous, with row-level validation. Valid rows are imported and invalid rows come back in an error report. Import only creates employees. If an employee code already exists, the row is skipped with the reason "already exists", so the same file can be uploaded again safely. Each row's salary becomes the employee's first revision, effective from `joined_on`, with the reason "initial". Department and job title are trimmed and then matched exactly. A row whose country isn't in the system is rejected.
+3. **Excel import.** Accepts only `.xlsx` files up to 5 MB. Synchronous, with row-level validation. Valid rows are imported and invalid rows come back in an error report. Import only creates employees. If an employee code already exists, the row is skipped with the reason "already exists", so the same file can be uploaded again safely. Each row's salary becomes the employee's first revision, effective from `joined_on`, with the reason "initial". Department and job title are trimmed and then matched exactly. A row whose country isn't in the system is rejected.
 4. **Tax.** One flat tax rate per country, configurable by HR.
 5. **Monthly payroll.** Each run is stored with its month as a date (the 1st of the month, e.g. 2026-10-01), and the month is unique. HR picks a month and clicks "Generate payroll":
-   - **A new month** creates a run. It must be later than the latest existing run, and no later than the current month. Every entry starts with a bonus and deduction of 0.
+   - **A new month** creates a run. The first run can be for any month up to the current month. After that, a new run must be exactly the month after the latest run and not in the future, so no month can be skipped and left unpaid. Every entry starts with a bonus and deduction of 0.
    - **The latest month (the open month)** is recalculated in place, after a confirmation dialog:
      - the calculated amounts are refreshed from the current revisions, terminations and tax rates
      - bonuses, deductions and notes that HR entered are kept
@@ -36,6 +36,7 @@ The HR Manager. There is a single HR login and no other roles.
 ## Definitions
 - All amounts are in **USD**. Using one currency makes pay comparable across countries.
 - Salary components (base, allowances, deductions) are stored as **annual** amounts.
+- Active employee: `joined_on` is on or before today, and `terminated_on` is null or on or after today. Future joiners aren't active yet.
 - Salary = annual gross = base + allowances. Total salary cost = the sum of annual gross across employees.
 - Proration factor = days worked in the month / calendar days in the month. Days worked run from the later of `joined_on` and the 1st, to the earlier of `terminated_on` and the month's last day, inclusive.
 - Monthly gross = annual gross / 12 × proration factor
