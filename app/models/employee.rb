@@ -41,6 +41,7 @@ class Employee < ApplicationRecord
   end
 
   def terminate!(date)
+    errors.clear
     if terminated_on
       errors.add(:terminated_on, "is already set, the employee is already terminated")
     elsif date.blank?
