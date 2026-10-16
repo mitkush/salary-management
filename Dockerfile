@@ -27,6 +27,16 @@ ENV RAILS_ENV="production" \
     BUNDLE_WITHOUT="development" \
     LD_PRELOAD="/usr/local/lib/libjemalloc.so"
 
+FROM docker.io/library/node:24-slim AS frontend
+
+WORKDIR /frontend
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+COPY frontend/ ./
+RUN npm run build
+
 # Throw-away build stage to reduce size of final image
 FROM base AS build
 
@@ -37,7 +47,7 @@ RUN apt-get update -qq && \
 
 # Install application gems
 COPY vendor/* ./vendor/
-COPY Gemfile Gemfile.lock ./
+COPY Gemfile Gemfile.lock .ruby-version ./
 
 RUN bundle install && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
@@ -46,13 +56,17 @@ RUN bundle install && \
 
 # Copy application code
 COPY . .
+COPY --from=frontend /public/spa ./public/spa
 
 # Precompile bootsnap code for faster boot times.
 # -j 1 disable parallel compilation to avoid a QEMU bug: https://github.com/rails/bootsnap/issues/495
 RUN bundle exec bootsnap precompile -j 1 app/ lib/
 
+FROM build AS test
 
+ENV RAILS_ENV="test"
 
+CMD ["bash", "-c", "bin/rails db:prepare && bundle exec rspec"]
 
 # Final stage for app image
 FROM base
