@@ -104,7 +104,8 @@ RSpec.describe "API session", type: :request do
       sign_in(user, password: "s3cret-pass")
 
       delete "/api/session", as: :json
-      expect(response).to have_http_status(:no_content)
+      expect(response).to have_http_status(:ok)
+      expect(json["csrf_token"]).to be_present
 
       get "/api/session", as: :json
       expect(json["authenticated"]).to be(false)
@@ -158,7 +159,17 @@ RSpec.describe "API session", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
 
       delete "/api/session", headers: { "X-CSRF-Token" => new_token }, as: :json
-      expect(response).to have_http_status(:no_content)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "gives a new token on logout so HR can log in again in the same tab" do
+      get "/api/session", as: :json
+      login_with_token(json["csrf_token"])
+      delete "/api/session", headers: { "X-CSRF-Token" => json["csrf_token"] }, as: :json
+
+      login_with_token(json["csrf_token"])
+
+      expect(response).to have_http_status(:ok)
     end
   end
 end
