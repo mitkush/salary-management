@@ -139,7 +139,7 @@ The API returns JSON under `/api`. Every endpoint except `GET` and `POST /api/se
 | GET | `/api/filter_options` | Countries, departments and job titles for the dropdowns |
 | GET | `/api/insights?country_id=&department=&job_title=&group_by=` | `{ summary, groups }`. The summary has headcount, total, min, max, average and median (median rounded to cents). With `group_by=country` or `department`, groups have the same values plus `share` (percent of total cost). An unknown `group_by` returns 400. |
 | GET / PATCH | `/api/countries`, `/api/countries/:id` | List countries with `tax_rate_percent` / update it with `{ country: { tax_rate_percent } }`. The API works in percent (0–100, at most 2 decimals) and stores the 0–1 fraction. Invalid values return 422 under `tax_rate_percent`. |
-| GET | `/api/payroll_runs` | List runs, with a `locked` flag on each and an `outdated` flag on the open run |
+| GET | `/api/payroll_runs` | List runs, newest first, each with `entries_count`, `totals: { gross, tax, net }` (summed in SQL, gross before bonuses), a `locked` flag, and an `outdated` flag on the open run |
 | PUT | `/api/payroll_runs/:month` | Generate, or recalculate if the run exists (`month` = `2026-10`) |
 | GET | `/api/payroll_runs/:month/entries?page=` | Paginated entries sorted by employee code, with the employee's code and name, the bank account masked, and `tax_rate_percent` |
 | PATCH | `/api/payroll_runs/:month/entries/:id` | Set bonus, one-time deduction and note (open month only). Recalculates that entry. |
@@ -169,7 +169,7 @@ A month that isn't in `YYYY-MM` form returns 400. A future, skipped or locked mo
 | Employees | A searchable, filterable, paginated table showing status and the masked bank account |
 | Employee detail | Employee details, revision history with reasons (revisions dated after `terminated_on` marked as never applied), an "Add revision" modal and a "Terminate" modal |
 | Import | File upload, then counts of imported, skipped and failed rows, plus an error table |
-| Payroll | Month picker, "Generate" or "Recalculate" (with confirmation), runs list, entries table with negative net flagged and totals, bonus/deduction/note editing on entries of the open month, an "Outdated" badge when the open month needs recalculating, and Export |
+| Payroll | Month picker and "Generate payroll" (disabled while running; asks to confirm before recalculating an existing month), runs list with Locked/Open/Outdated tags, and for the selected month: an outdated warning, gross/tax/net totals from the API, a paginated entries table (bank account masked, negative net in red), a bonus/deduction/note modal on open-month entries, and "Export to Excel" downloaded with `fetch` so an expired session goes to login. Month and page live in the URL. |
 | Countries | Tax rate per country, editable |
 
 The UI only formats and displays values. Every amount comes from the API.
