@@ -1,8 +1,8 @@
 require "rails_helper"
 
-RSpec.describe "db/seeds.rb" do
+RSpec.describe "db/seeds/hr_user.rb" do
   def load_seeds
-    load Rails.root.join("db/seeds.rb")
+    load Rails.root.join("db/seeds/hr_user.rb")
   end
 
   it "creates the HR user from HR_EMAIL and HR_PASSWORD" do
