@@ -219,3 +219,16 @@ Also align the commit-granularity wording across CLAUDE.md and the review skill.
 - **Commit pairs:** failing specs are committed first as `test:`, then the code as `feat:`, one pair per meaningful piece. "Tests pass before every commit" now has an exception for those `test:` commits.
 - **Expiry spec:** made stricter, so it sends the expired cookie back by hand and proves the server rejects it.
 - **Deploy:** I'll set my own `HR_PASSWORD` on the VM.
+
+## 14. Fixes from the PR 4 review
+**Prompt:** Fix the review findings: logout should return a new CSRF token (failing spec first), clear the rate-limit store before every spec and check with random seeds, keep HR logged in and show the error when logout fails, and add a `WEB_CONCURRENCY` deploy note.
+
+**Claude produced:**
+- **Flaky suite fixed:** the rate-limit store is now cleared before every spec. Before, 7 of 60 random orders failed; after, 0 of 60 fail, and the 7 previously failing seeds pass on the full suite.
+- **Logout:** it now returns `200 { csrf_token }`.
+  - **Specs first:** the two logout specs changed from 204 to 200, and a new spec covers logging back in from the same tab. All three failed before the fix.
+  - **Why:** without this, logging back in after logout in the same tab failed with 422 until a refresh. The review skill's `/code-review` step found this.
+- **Failed logout:** the app now shows the error and keeps HR logged in, instead of showing the login page while the server session was still valid.
+- **Deploy checklist:** leave `WEB_CONCURRENCY` unset, because the rate limit is counted per process.
+
+**I changed:** nothing. I accepted all four. I skipped cleaning up expired session rows for now.

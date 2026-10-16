@@ -121,7 +121,7 @@ The API returns JSON under `/api`. Every endpoint except `GET` and `POST /api/se
 
 **Auth:**
 - **Session:** Rails 8's authentication generator, trimmed to JSON (no password reset, mailer or HTML views). Login sets a signed, httponly, `SameSite=Lax` `session_id` cookie that expires after 1 day. Rails signs the expiry into the cookie, so the server rejects an expired cookie even if it's sent back.
-- **CSRF:** Rails' built-in protection. `GET /api/session` and the login response return the token, and React sends it as `X-CSRF-Token` on every non-GET request. The session is reset on login and logout, so the token rotates.
+- **CSRF:** Rails' built-in protection. `GET /api/session` and the login response return the token, and React sends it as `X-CSRF-Token` on every non-GET request. The session is reset on login and logout, so the token rotates. Both responses return the new token.
 - **Login errors:** a wrong password and an unknown email give the same 401 response.
 - **Rate limit:** 10 login attempts per IP per 3 minutes, then 429. Counts are kept in their own in-memory store, which is fine for a single Puma process.
 - **Seed:** one HR user from `HR_EMAIL` / `HR_PASSWORD`, defaulting to `hr@example.com` / `password` for local use.
@@ -129,7 +129,7 @@ The API returns JSON under `/api`. Every endpoint except `GET` and `POST /api/se
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/api/session` | Login status, the user and a CSRF token. Open without login, so React can check after a refresh. |
-| POST / DELETE | `/api/session` | Log in (open, rate limited) / log out |
+| POST / DELETE | `/api/session` | Log in (open, rate limited) / log out. Both return a new CSRF token. |
 | GET | `/api/employees?q=&country_id=&department=&job_title=&status=&page=` | Paginated list, with the bank account masked |
 | GET | `/api/employees/:id` | Employee details and revision history |
 | POST | `/api/employees/:id/salary_revisions` | Add a revision, with a reason |
@@ -230,4 +230,5 @@ It's a little coarse (e.g. a termination in a later month also triggers it), but
 - Deploy: the VM must use its own `SECRET_KEY_BASE` from its `.env`. The one in `docker-compose.yml` is public and only for local use.
 - Deploy: `RAILS_HOSTS` must be set on the VM. If it's unset, Rails accepts any `Host` header.
 - Deploy: set `HR_PASSWORD` on the VM. The default `password` is public in the README.
+- Deploy: leave `WEB_CONCURRENCY` unset, so Puma runs one process. The login rate limit is counted in memory per process, so each extra worker would allow another 10 attempts.
 - Whether `upsert_all` with `update_only` in the installed Rails version keeps HR's bonus, deduction and note untouched on recalculation.
