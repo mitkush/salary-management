@@ -24,11 +24,18 @@ module Api
         render_error :unauthorized, "Please log in.", status: :unauthorized
       end
 
+      MAX_PAGE = 1_000_000
+
       def paginate(scope, default_per_page: 25, max_per_page: 100)
-        per_page = params.fetch(:per_page, default_per_page).to_i.clamp(1, max_per_page)
-        page = [ params[:page].to_i, 1 ].max
+        per_page = integer_param(:per_page, default_per_page).clamp(1, max_per_page)
+        page = integer_param(:page, 1).clamp(1, MAX_PAGE)
         records = scope.limit(per_page).offset((page - 1) * per_page).to_a
         [ records, { page: page, per_page: per_page, total: scope.count } ]
+      end
+
+      def integer_param(name, default)
+        value = params[name]
+        value.is_a?(String) && value.match?(/\A\d+\z/) ? value.to_i : default
       end
 
       def render_error(code, message, status:, details: nil)

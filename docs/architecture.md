@@ -101,7 +101,7 @@ All money columns are `decimal(12,2)`. Every column is `NOT NULL` unless marked 
 **Derived values, not stored:**
 - **Status:** `active` if `joined_on <= today` and (`terminated_on` is null or `>= today`), `upcoming` if `joined_on > today`, `terminated` if `terminated_on < today`. This keeps future joiners out of both the headcount and the salary stats.
 - **Locked month:** a month is locked if it's earlier than `MAX(payroll_runs.month)`.
-- **Current salary:** the latest revision with `effective_on <= today`.
+- **Current salary:** the latest revision with `effective_on` on or before the earlier of today and `terminated_on`.
 
 ## 3. Services
 
@@ -155,7 +155,7 @@ The API returns JSON under `/api`. Every endpoint except `GET` and `POST /api/se
 | 422 | A validation error, or a missing or invalid CSRF token |
 | 429 | Too many login attempts |
 
-**Lists** take `page` and `per_page` (default 25, maximum 100) and return `{ "data": [...], "meta": { "page", "per_page", "total" } }`.
+**Lists** take `page` (maximum 1,000,000) and `per_page` (default 25, maximum 100). Values that aren't whole numbers fall back to the defaults, and return `{ "data": [...], "meta": { "page", "per_page", "total" } }`.
 
 ## 5. Frontend pages
 

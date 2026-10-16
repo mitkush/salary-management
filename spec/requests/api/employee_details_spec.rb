@@ -42,6 +42,18 @@ RSpec.describe "API employee details, revisions and termination", type: :request
         expect(response.body).not_to include("123456789876")
       end
 
+      it "doesn't report a revision after the last working day as the current salary" do
+        create(:salary_revision, employee: employee, effective_on: Date.new(2026, 6, 1), reason: "increment",
+          annual_base: "90000.00", annual_allowances: "0.00")
+        employee.terminate!(Date.new(2026, 5, 1))
+
+        get "/api/employees/#{employee.id}", as: :json
+        expect(json.dig("employee", "current_annual_gross")).to eq("66000.0")
+
+        get "/api/employees", as: :json
+        expect(json["data"].first["current_annual_gross"]).to eq("66000.0")
+      end
+
       it "marks a revision dated after the last working day as never applying" do
         future = create(:salary_revision, employee: employee, effective_on: Date.new(2027, 1, 1), reason: "increment")
         employee.terminate!(Date.new(2026, 12, 31))
@@ -89,6 +101,14 @@ RSpec.describe "API employee details, revisions and termination", type: :request
         expect(json.dig("error", "details").keys).to contain_exactly("effective_on", "reason", "annual_base")
       end
 
+      it "returns 422 instead of crashing for an amount with too many digits" do
+        post "/api/employees/#{employee.id}/salary_revisions",
+          params: { salary_revision: valid.merge(annual_base: "100000000000") }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(json.dig("error", "details", "annual_base")).to eq([ "must be less than or equal to 1000000000" ])
+      end
+
       it "ignores attributes that can't be set, like annual_gross or employee_id" do
         other = create(:employee)
 
@@ -105,6 +125,16 @@ RSpec.describe "API employee details, revisions and termination", type: :request
 
         expect(response).to have_http_status(:bad_request)
         expect(json).to eq("error" => { "code" => "bad_request", "message" => "Missing or invalid parameters." })
+      end
+
+      it "returns 422 when a simultaneous request saved the same date first" do
+        allow_any_instance_of(ActiveRecord::Validations::UniquenessValidator).to receive(:validate_each)
+
+        post "/api/employees/#{employee.id}/salary_revisions",
+          params: { salary_revision: valid.merge(effective_on: "2025-03-01") }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(json.dig("error", "details", "effective_on")).to eq([ "already has a revision for this employee" ])
       end
 
       it "returns 404 for an unknown employee" do

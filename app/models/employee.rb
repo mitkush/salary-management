@@ -18,7 +18,7 @@ class Employee < ApplicationRecord
   }
 
   scope :search, ->(query) {
-    next all if query.blank?
+    next all unless query.is_a?(String) && query.present?
 
     pattern = "%#{sanitize_sql_like(query.strip)}%"
     where("full_name ILIKE :pattern OR employee_code ILIKE :pattern", pattern: pattern)
@@ -33,7 +33,7 @@ class Employee < ApplicationRecord
   end
 
   def current_revision
-    salary_revisions.where(effective_on: ..Date.current).order(effective_on: :desc).first
+    salary_revisions.where(effective_on: ..[ Date.current, terminated_on ].compact.min).order(effective_on: :desc).first
   end
 
   def masked_bank_account
@@ -41,6 +41,7 @@ class Employee < ApplicationRecord
   end
 
   def terminate!(date)
+    errors.clear
     if terminated_on
       errors.add(:terminated_on, "is already set, the employee is already terminated")
     elsif date.blank?

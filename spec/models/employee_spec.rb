@@ -87,6 +87,14 @@ RSpec.describe Employee, type: :model do
       expect { employee.terminate!(nil) }.to raise_error(ActiveRecord::RecordInvalid, /can't be blank/)
     end
 
+    it "succeeds on a valid date after a failed attempt on the same record" do
+      expect { employee.terminate!(nil) }.to raise_error(ActiveRecord::RecordInvalid)
+
+      employee.terminate!(Date.new(2026, 10, 31))
+
+      expect(employee.reload.terminated_on).to eq(Date.new(2026, 10, 31))
+    end
+
     it "rejects terminating someone who is already terminated" do
       employee.terminate!(Date.new(2026, 10, 31))
 

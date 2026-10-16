@@ -291,6 +291,19 @@ Also align the commit-granularity wording across CLAUDE.md and the review skill.
 - The `initial` reason stays available only through the API, used by the seed and the import, by choice. HR picks increment, promotion, correction or other in the UI.
 - I checked all scenarios in the browser myself.
 
+## 17. Fixes from the PR 5 review
+**Prompt:** Fix the four should-fix items and the nit from `review PR 5`, test-first. Cap amounts at 1,000,000,000. For two requests racing to save a revision, add a known limitation instead of a database lock.
+
+**Claude produced:** a test/fix pair for each item. Each spec was seen failing for the right reason first.
+- **Backdated termination:** with one, the current salary showed a raise that never applied. The lookup now stops at the last working day.
+- **Huge amounts:** these crashed with a 500 (`RangeError`). Each amount is now capped at 1,000,000,000, so the database-generated `annual_gross` always fits.
+- **Malformed list parameters:** an array search, an array page or a huge page number crashed. They now fall back to the defaults, and the page number is capped.
+- **Duplicate revision date:** two requests saving the same date at once gave a 500 instead of a 422. The spec simulates the race by skipping the duplicate-date check in Ruby, so the database's unique index rejects the second save.
+- **`terminate!`:** it kept the errors from a failed attempt, so a later valid call still failed. It now clears them first.
+- **How the findings were found:** the review skill's `/code-review` step found the backdated-termination bug and the race. Claude's throwaway specs reproduced every finding before it was reported.
+
+**I changed:** nothing. I accepted all five, chose the 1,000,000,000 cap, and chose a known limitation over a database lock for the race.
+
 ## 18. Fixes from the PR 6/8 review, and the first frontend tests
 **Prompt:** Fix the three should-fix bugs and the nit from the PR 6 review on PR 8, which has the same commits but targets `main`. Work test-first. Resolve the `ai-prompts.md` conflict by merging `main` into the branch with a merge commit, without a force-push.
 
