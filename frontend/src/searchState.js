@@ -1,4 +1,4 @@
-const KEPT_ON_FILTER_CHANGE = ['q', 'country_id', 'department', 'job_title', 'status', 'per_page']
+const KEPT_ON_FILTER_CHANGE = ['q', 'country_id', 'department', 'job_title', 'status', 'per_page', 'as_of']
 
 export function applyFilterChanges(params, changes) {
   const next = { ...Object.fromEntries(params), ...changes }
@@ -39,7 +39,7 @@ export function searchBoxText(search, urlQ) {
   return search.forQ === urlQ ? search.text : urlQ
 }
 
-const KEPT_ON_CLEAR = ['per_page', 'view']
+const KEPT_ON_CLEAR = ['per_page', 'view', 'as_of']
 
 export function clearFilters(params) {
   return new URLSearchParams([...params].filter(([key]) => KEPT_ON_CLEAR.includes(key)))
