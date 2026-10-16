@@ -368,3 +368,17 @@ Also align the commit-granularity wording across CLAUDE.md and the review skill.
   - Each import batch is saved in one transaction, so employees can't be left without their first revision.
   - The template formats `employee_code` and `bank_account_number` as text. Excel keeps only 15 significant digits for numbers, which would silently change long account numbers.
   - I kept the other two review findings (a duplicate-code race and the template link when logged out) as known limitations, since there's a single user.
+
+## 21. Tax rates
+**Prompt:** A countries page where HR edits each country's flat tax rate.
+- The rate is stored as 0–1 but shown and entered as a percent, from 0 to 100 with at most 2 decimals.
+- Errors appear under the field, with a success message after saving.
+- Test-first, kept simple for payroll.
+
+**Decided in the plan:** the API works in percent (`tax_rate_percent`) and converts on the server, so the conversion and its error messages live in one place and the UI does no maths. A percent with more than 2 decimals is rejected, not rounded.
+
+**Claude produced:**
+- `Country#tax_rate_percent` reader and writer, with errors for blank, not a number, out of range and too many decimals. An invalid value leaves the stored rate unchanged.
+- `GET` and `PATCH /api/countries`: only the rate can be changed, and the code and name are ignored.
+- The Countries page, with an edit modal and a success message, reusing `formErrorUpdate`.
+- Each piece in test/feat pairs. Two API specs ("404 for an unknown country" and "only changes the tax rate") already passed before the route existed. They check real behaviour once it does.

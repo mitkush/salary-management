@@ -3,6 +3,7 @@ import { Alert, Button, Flex, Result, Spin } from 'antd'
 import { Link, Navigate, Route, Routes } from 'react-router'
 import { api, setUnauthorizedHandler } from './api.js'
 import AppLayout from './AppLayout.jsx'
+import CountriesPage from './CountriesPage.jsx'
 import EmployeeDetailPage from './EmployeeDetailPage.jsx'
 import EmployeesPage from './EmployeesPage.jsx'
 import ImportPage from './ImportPage.jsx'
@@ -52,6 +53,7 @@ function App() {
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="employees/:id" element={<EmployeeDetailPage />} />
         <Route path="import" element={<ImportPage />} />
+        <Route path="countries" element={<CountriesPage />} />
         <Route
           path="*"
           element={
