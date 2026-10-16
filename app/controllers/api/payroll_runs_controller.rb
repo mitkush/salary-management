@@ -11,7 +11,7 @@ module Api
     end
 
     def update
-      run = Payroll::Generator.call(payroll_month(params[:month]))
+      run = Payroll::Generator.call(month_param(params[:month]))
 
       render json: run_json(run, latest_month: PayrollRun.latest_month, summary: run_summaries([ run ])[run.id])
     end
