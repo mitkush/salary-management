@@ -57,4 +57,95 @@ RSpec.describe "API session", type: :request do
       expect(json.dig("error", "code")).to eq("invalid_credentials")
     end
   end
+
+  describe "GET /api/session" do
+    it "reports a logged out visitor and still gives a CSRF token" do
+      get "/api/session", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json).to include("authenticated" => false, "user" => nil)
+      expect(json["csrf_token"]).to be_present
+    end
+
+    it "reports the logged in user after a page refresh" do
+      sign_in(user, password: "s3cret-pass")
+
+      get "/api/session", as: :json
+
+      expect(json).to include("authenticated" => true, "user" => { "id" => user.id, "email_address" => "hr@example.com" })
+    end
+
+    it "treats a session older than a day as logged out" do
+      sign_in(user, password: "s3cret-pass")
+
+      travel 1.day + 1.second do
+        get "/api/session", as: :json
+
+        expect(json["authenticated"]).to be(false)
+      end
+    end
+  end
+
+  describe "DELETE /api/session" do
+    it "logs out so the session no longer works" do
+      sign_in(user, password: "s3cret-pass")
+
+      delete "/api/session", as: :json
+      expect(response).to have_http_status(:no_content)
+
+      get "/api/session", as: :json
+      expect(json["authenticated"]).to be(false)
+      expect(user.sessions.count).to eq(0)
+    end
+
+    it "returns 401 when nobody is logged in" do
+      delete "/api/session", as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(json).to eq("error" => { "code" => "unauthorized", "message" => "Please log in." })
+    end
+  end
+
+  describe "CSRF protection" do
+    around do |example|
+      original = ActionController::Base.allow_forgery_protection
+      ActionController::Base.allow_forgery_protection = true
+      example.run
+    ensure
+      ActionController::Base.allow_forgery_protection = original
+    end
+
+    def login_with_token(token)
+      post "/api/session", params: { email_address: "hr@example.com", password: "s3cret-pass" },
+        headers: { "X-CSRF-Token" => token }, as: :json
+    end
+
+    it "rejects a login without a CSRF token with 422" do
+      post "/api/session", params: { email_address: "hr@example.com", password: "s3cret-pass" }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(json.dig("error", "code")).to eq("invalid_csrf_token")
+    end
+
+    it "accepts a login with the token from GET /api/session" do
+      get "/api/session", as: :json
+
+      login_with_token(json["csrf_token"])
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "rotates the token on login so the old one stops working" do
+      get "/api/session", as: :json
+      old_token = json["csrf_token"]
+      login_with_token(old_token)
+      new_token = json["csrf_token"]
+
+      delete "/api/session", headers: { "X-CSRF-Token" => old_token }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+
+      delete "/api/session", headers: { "X-CSRF-Token" => new_token }, as: :json
+      expect(response).to have_http_status(:no_content)
+    end
+  end
 end
