@@ -18,7 +18,7 @@ The HR Manager. There is a single HR login and no other roles.
 3. **Excel import.** Accepts only `.xlsx` files up to 5 MB. Synchronous, with row-level validation. Valid rows are imported and invalid rows come back in an error report. Import only creates employees. If an employee code already exists, the row is skipped with the reason "already exists", so the same file can be uploaded again safely. Each row's salary becomes the employee's first revision, effective from `joined_on`, with the reason "initial". Department and job title are trimmed and then matched exactly. A row whose country isn't in the system is rejected.
 4. **Tax.** One flat tax rate per country, configurable by HR.
 5. **Monthly payroll.** Each run is stored with its month as a date (the 1st of the month, e.g. 2026-10-01), and the month is unique. HR picks a month and clicks "Generate payroll":
-   - **A new month** creates a run. The first run can be for any month up to the current month. After that, a new run must be exactly the month after the latest run and not in the future, so no month can be skipped and left unpaid. Every entry starts with a bonus and deduction of 0.
+   - **A new month** creates a run. The first run must be for the current or the previous month. After that, a new run must be exactly the month after the latest run and not in the future, so no month can be skipped and left unpaid. Every entry starts with a bonus and deduction of 0.
    - **The latest month (the open month)** is recalculated in place, after a confirmation dialog:
      - the calculated amounts are refreshed from the current revisions, terminations and tax rates
      - bonuses, deductions and notes that HR entered are kept

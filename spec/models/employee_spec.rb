@@ -95,6 +95,15 @@ RSpec.describe Employee, type: :model do
       expect(employee.reload.terminated_on).to eq(Date.new(2026, 10, 31))
     end
 
+    it "rejects a last working day in a locked payroll month, but allows the open month" do
+      create(:payroll_run, month: Date.new(2026, 9, 1))
+      create(:payroll_run, month: Date.new(2026, 10, 1))
+
+      expect { employee.terminate!(Date.new(2026, 9, 30)) }.to raise_error(ActiveRecord::RecordInvalid, /falls in a locked payroll month/)
+      employee.terminate!(Date.new(2026, 10, 1))
+      expect(employee.reload.terminated_on).to eq(Date.new(2026, 10, 1))
+    end
+
     it "rejects terminating someone who is already terminated" do
       employee.terminate!(Date.new(2026, 10, 31))
 

@@ -6,7 +6,10 @@ RSpec.describe Employees::Importer do
   let!(:india) { create(:country, code: "IN", name: "India") }
 
   def import(rows, **options)
-    described_class.new(xlsx_file(rows, **options).path).call
+    file = xlsx_file(rows, **options)
+    described_class.new(file.path).call
+  ensure
+    file&.close!
   end
 
   def row_result(result, row)

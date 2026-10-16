@@ -382,3 +382,42 @@ Also align the commit-granularity wording across CLAUDE.md and the review skill.
 - `GET` and `PATCH /api/countries`: only the rate can be changed, and the code and name are ignored.
 - The Countries page, with an edit modal and a success message, reusing `formErrorUpdate`.
 - Each piece in test/feat pairs. Two API specs ("404 for an unknown country" and "only changes the tax rate") already passed before the route existed. They check real behaviour once it does.
+
+## 22. Payroll (backend)
+**Prompt:** The payroll backend, following the requirements and the architecture doc:
+- generate and recalculate runs, with locked months and proration
+- edit an entry's bonus, deduction and note
+- the outdated flag and the Excel export
+- the termination check against locked months that was left as a follow-up
+- specs for every edge case
+
+Split into two PRs (not stacked), backend first.
+
+**Decided in the plan:**
+- Bonus and one-time deduction are capped at 1,000,000,000.
+- A badly formatted month returns 400.
+- An empty month gives an empty run.
+- `upsert_all` with `update_only` is checked by a spec before relying on it.
+
+**Claude produced, test-first pairs:**
+- **`Payroll::EntryCalculator`:**
+  - **Proration:** full month, joining or leaving on the 1st or the last day, joining and leaving in the same month, February 2028 (leap year) and 2027.
+  - **Money:** rounding half up, a taxed bonus, deductions after tax, negative net, and a 0% rate.
+  - **Half-up rounding** is pinned by `0.105 → 0.11` and `10.005 → 10.01`, which banker's rounding would get wrong.
+- **`PayrollRun` and `PayrollEntry`**, with database checks.
+- **`Payroll::Generator`:**
+  - the month rules (first run, next month only, future, skipped and locked months)
+  - who is eligible, and the revision in effect on the last day worked (reusing `current_for` with `on: month end`)
+  - a snapshot of each tax rate
+  - recalculation that keeps HR's values, adds newly eligible employees and never deletes
+- **The rest:** `outdated?`, `PayrollEntry#adjust!` (recalculates tax and net for that entry only), the locked-month check on termination, the API and `Payroll::Exporter`.
+
+**Caught along the way:**
+- **Export order:** `find_each` silently ignored the sort by employee code. Claude added a sort spec, showed it failing with `find_each` (EMP00001, EMP00003, EMP00002), and switched to one ordered `pluck`.
+- **A flaky import spec from PR 10:** the helper didn't keep the temp file alive, so garbage collection could delete it before it was read. Fixed in its own `test:` commit.
+
+**Performance on the 10k seed:** generating 9,329 entries took 1.3 s, recalculating 1.1 s, and exporting 0.7 s.
+- **Review fixes (PR 12), test-first:**
+  - A month generated twice at the same moment now returns 409 instead of 500.
+  - The first payroll run must be for the current or the previous month, so HR can't accidentally start years back and then have to generate every month since.
+  - Specs that made their first run further back were changed to match the new rule, not just to make them pass. The earlier runs are now created directly.
