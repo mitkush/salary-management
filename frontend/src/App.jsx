@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { Alert, Button, Flex, Result, Spin } from 'antd'
 import { Link, Navigate, Route, Routes } from 'react-router'
 import { api, setUnauthorizedHandler } from './api.js'
 import AppLayout from './AppLayout.jsx'
-import DashboardPage from './DashboardPage.jsx'
 import EmployeeDetailPage from './EmployeeDetailPage.jsx'
 import EmployeesPage from './EmployeesPage.jsx'
 import LoginPage from './LoginPage.jsx'
+
+const DashboardPage = lazy(() => import('./DashboardPage.jsx'))
 
 function App() {
   const [user, setUser] = useState(null)
@@ -39,7 +40,14 @@ function App() {
     <Routes>
       <Route element={<AppLayout user={user} onLogout={() => setUser(null)} />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
+        <Route
+          path="dashboard"
+          element={
+            <Suspense fallback={<Flex justify="center" style={{ padding: 48 }}><Spin size="large" /></Flex>}>
+              <DashboardPage />
+            </Suspense>
+          }
+        />
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="employees/:id" element={<EmployeeDetailPage />} />
         <Route
