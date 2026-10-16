@@ -6,7 +6,7 @@ Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
 
   namespace :api do
-    resource :session, only: %i[create]
+    resource :session, only: %i[show create destroy]
   end
 
   # Defines the root path route ("/")

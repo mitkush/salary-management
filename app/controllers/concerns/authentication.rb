@@ -36,4 +36,9 @@ module Authentication
         cookies.signed[:session_id] = { value: session.id, httponly: true, same_site: :lax, expires: SESSION_TTL.from_now }
       end
     end
+
+    def terminate_session
+      Current.session.destroy
+      cookies.delete(:session_id)
+    end
 end
