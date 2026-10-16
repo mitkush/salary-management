@@ -35,7 +35,7 @@ A salary management web app for ACME's HR Manager, covering about 10,000 employe
 
 ## Domain reminders (details in docs/requirements.md)
 - Salary revisions are immutable.
-- Payroll entries are snapshots of the salary and tax rate at generation time.
+- Payroll entries are the only stored payroll. View and export read them and never recalculate.
 - Locked payroll months are read-only.
 - Employee details are never edited. The only change allowed is termination.
 - The UI shows only the last 4 digits of a bank account number.
