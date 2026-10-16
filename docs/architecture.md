@@ -136,7 +136,7 @@ The API returns JSON under `/api`. Every endpoint except `GET` and `POST /api/se
 | POST | `/api/employees/:id/termination` | Terminate, with `terminated_on` |
 | POST | `/api/employee_imports` | Upload an Excel file, returns the import report |
 | GET | `/api/filter_options` | Countries, departments and job titles for the dropdowns |
-| GET | `/api/insights?country_id=&department=&job_title=&group_by=` | Dashboard stats, optionally grouped |
+| GET | `/api/insights?country_id=&department=&job_title=&group_by=` | `{ summary, groups }`. The summary has headcount, total, min, max, average and median (median rounded to cents). With `group_by=country` or `department`, groups have the same values plus `share` (percent of total cost). An unknown `group_by` returns 400. |
 | GET / PATCH | `/api/countries`, `/api/countries/:id` | List countries and tax rates / update a tax rate |
 | GET | `/api/payroll_runs` | List runs, with a `locked` flag on each and an `outdated` flag on the open run |
 | PUT | `/api/payroll_runs/:month` | Generate, or recalculate if the run exists (`month` = `2026-10`) |
@@ -162,7 +162,7 @@ The API returns JSON under `/api`. Every endpoint except `GET` and `POST /api/se
 | Page | Shows |
 |---|---|
 | Login | Email and password |
-| Dashboard | Filters, stat cards (headcount, total cost, min, max, average, median), and a chart grouped by country or department |
+| Dashboard (home page, `/` redirects here) | Filters, stat cards (headcount, total cost, min, max, average, median), and a donut of salary cost by country or department, with the total in the centre and tooltips showing name, cost and share. It's loaded with React `lazy()` because the chart library is large. |
 | Employees | A searchable, filterable, paginated table showing status and the masked bank account |
 | Employee detail | Employee details, revision history with reasons (revisions dated after `terminated_on` marked as never applied), an "Add revision" modal and a "Terminate" modal |
 | Import | File upload, then counts of imported, skipped and failed rows, plus an error table |
