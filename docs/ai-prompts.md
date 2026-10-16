@@ -344,3 +344,27 @@ Also align the commit-granularity wording across CLAUDE.md and the review skill.
 - **On the 10k seed:** the median is $76,339.42, matching the earlier `EXPLAIN` check. The summary query takes 77 ms on its first run and the breakdown 22 ms.
 
 **Follow-ups:** split the shared chart code out of the main bundle.
+
+## 20. Excel import
+**Prompt:** Import employees from `.xlsx`, synchronously, with row-by-row validation.
+- **File checks:** only `.xlsx` up to 5 MB, rejected with 422 before parsing.
+- **Rows:** country by code or name; department and job title trimmed; an existing code is skipped; failed rows come back with their reasons; each new employee gets an initial revision on `joined_on`.
+- **Frontend:** an import page with the results. I later added a "Download template" button.
+
+**Decided in the plan:**
+- `roo` to read the files.
+- `caxlsx` to build the test files and the template.
+- An existing code with identical details is **skipped**, while one with different details **fails**, since import never updates.
+- Country matching ignores capitalisation.
+- A repeated code in the same file fails.
+
+**Claude produced:**
+- **`Employees::Importer`:** it reuses the `Employee` and `SalaryRevision` validations for each row, so the amount cap and the date rules apply here too, and saves valid rows in bulk.
+- **File checks:** `.xlsx` is confirmed by both the extension and the zip signature. Specs check that too-big and wrong-type files are rejected before `roo` reads them.
+- **Template endpoint, the import page, and `FormData` support in `api.js`** (test-first).
+- **Performance:** 10,000 rows took 9.5 s at first, because of 30,022 queries (3 per row: two uniqueness checks and loading the country). Claude skipped the uniqueness validators, which the importer already covers, and passed preloaded countries instead of ids. That brought it down to 22 queries and 3.8 s, of which reading the file is 1.7 s.
+- **Upload size:** Rails only checks the 5 MB limit after the whole upload has arrived, so a Caddy body limit is in the deploy checklist.
+- **Review fixes (PR 10), test-first:**
+  - Each import batch is saved in one transaction, so employees can't be left without their first revision.
+  - The template formats `employee_code` and `bank_account_number` as text. Excel keeps only 15 significant digits for numbers, which would silently change long account numbers.
+  - I kept the other two review findings (a duplicate-code race and the template link when logged out) as known limitations, since there's a single user.

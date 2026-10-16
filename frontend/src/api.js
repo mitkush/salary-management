@@ -19,8 +19,9 @@ export function setUnauthorizedHandler(handler) {
 }
 
 export async function api(path, { method = 'GET', body, params } = {}) {
+  const isForm = body instanceof FormData
   const headers = { Accept: 'application/json' }
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json'
   if (method !== 'GET' && csrfToken) headers['X-CSRF-Token'] = csrfToken
 
   const query = params ? new URLSearchParams(
@@ -30,7 +31,7 @@ export async function api(path, { method = 'GET', body, params } = {}) {
   const response = await fetch(`/api${path}${query ? `?${query}` : ''}`, {
     method,
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined || isForm ? body : JSON.stringify(body),
     credentials: 'same-origin',
   })
   const data = response.status === 204 ? null : await response.json().catch(() => null)

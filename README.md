@@ -40,6 +40,20 @@ bin/dev                       # Rails on :3000, Vite on :5173
 
 Open http://localhost:5173. Vite proxies `/api` to Rails. Log in with the demo login above.
 
+## Importing employees
+
+On the Import page, download the template, fill one employee per row and upload it (`.xlsx`, up to 5 MB).
+
+| Column | Notes |
+|---|---|
+| `employee_code` | Unique. An existing code with identical details is skipped, so re-uploading is safe. |
+| `full_name`, `department`, `job_title`, `bank_account_number` | Required; spaces around values are trimmed |
+| `country` | Code or name, e.g. `IN` or `India` |
+| `joined_on` | A date cell or `YYYY-MM-DD` |
+| `annual_base`, `annual_allowances`, `annual_deductions` | Annual USD amounts, 0 to 1,000,000,000 |
+
+Each new employee gets a first salary revision on `joined_on`. Rows with problems are listed with their row number and reason, and the rest are imported.
+
 ## Tests and checks
 
 ```sh

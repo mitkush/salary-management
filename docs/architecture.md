@@ -134,7 +134,8 @@ The API returns JSON under `/api`. Every endpoint except `GET` and `POST /api/se
 | GET | `/api/employees/:id` | Employee details and revision history |
 | POST | `/api/employees/:id/salary_revisions` | Add a revision, with a reason |
 | POST | `/api/employees/:id/termination` | Terminate, with `terminated_on` |
-| POST | `/api/employee_imports` | Upload an Excel file, returns the import report |
+| POST | `/api/employee_imports` | Upload an `.xlsx` file (field `file`). It's rejected with 422 before parsing if missing, not `.xlsx` (by extension and zip signature) or over 5 MB. Returns `{ created, skipped, failed, rows: [{ row, employee_code, status, reasons }] }`. |
+| GET | `/api/employee_imports/template` | An empty `.xlsx` with the import headers |
 | GET | `/api/filter_options` | Countries, departments and job titles for the dropdowns |
 | GET | `/api/insights?country_id=&department=&job_title=&group_by=` | `{ summary, groups }`. The summary has headcount, total, min, max, average and median (median rounded to cents). With `group_by=country` or `department`, groups have the same values plus `share` (percent of total cost). An unknown `group_by` returns 400. |
 | GET / PATCH | `/api/countries`, `/api/countries/:id` | List countries and tax rates / update a tax rate |
@@ -238,5 +239,6 @@ It's a little coarse (e.g. a termination in a later month also triggers it), but
 - Deploy: the VM must use its own `SECRET_KEY_BASE` from its `.env`. The one in `docker-compose.yml` is public and only for local use.
 - Deploy: `RAILS_HOSTS` must be set on the VM. If it's unset, Rails accepts any `Host` header.
 - Deploy: set `HR_PASSWORD` on the VM. The default `password` is public in the README.
+- Deploy: set Caddy's `request_body max_size` (e.g. 6 MB). Rails only checks the 5 MB import limit after the whole upload has arrived.
 - Deploy: leave `WEB_CONCURRENCY` unset, so Puma runs one process. The login rate limit is counted in memory per process, so each extra worker would allow another 10 attempts.
 - Whether `upsert_all` with `update_only` in the installed Rails version keeps HR's bonus, deduction and note untouched on recalculation.

@@ -13,6 +13,9 @@ Rails.application.routes.draw do
     end
     resource :filter_options, only: %i[show]
     resource :insights, only: %i[show]
+    resources :employee_imports, only: %i[create] do
+      get :template, on: :collection
+    end
   end
 
   # Defines the root path route ("/")
