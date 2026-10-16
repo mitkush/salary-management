@@ -67,6 +67,21 @@ RSpec.describe SalaryStatsQuery do
     expect(summary).to eq(headcount: 0, total: BigDecimal("0"), min: nil, max: nil, average: nil, median: nil)
   end
 
+  describe "as of a past date" do
+    let(:as_of) { Date.new(2026, 9, 30) }
+
+    it "counts who was active on that date, at the salary in effect then" do
+      raised_later = employee(gross: "60000.00", joined_on: Date.new(2025, 1, 1))
+      create(:salary_revision, employee: raised_later, effective_on: Date.new(2026, 10, 1), annual_base: "99000.00",
+        annual_allowances: "0.00", reason: "increment")
+      employee(gross: "40000.00", joined_on: Date.new(2025, 1, 1), terminated_on: Date.new(2026, 10, 5))
+      employee(gross: "70000.00", joined_on: Date.new(2026, 10, 1))
+      employee(gross: "80000.00", joined_on: Date.new(2025, 1, 1), terminated_on: Date.new(2026, 9, 29))
+
+      expect(described_class.new(as_of: as_of).summary).to include(headcount: 2, total: BigDecimal("100000"))
+    end
+  end
+
   describe "#groups" do
     before do
       employee(gross: "50000.00", country: india, department: "Finance")
