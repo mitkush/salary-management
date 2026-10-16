@@ -4,7 +4,7 @@
 
 A web app for ACME's HR Manager to manage salaries for about 10,000 employees across several countries. It replaces the spreadsheets HR uses today, and answers questions about how the organisation pays people.
 
-**Live demo:** _added after deployment_ · **Video walkthrough:** _added after deployment_
+**Live demo:** https://sal-mgnt.duckdns.org (login details are shared separately with the reviewer) · **Video walkthrough:** _added soon_
 
 ## Features
 
@@ -68,9 +68,9 @@ bin/dev                       # Rails on :3000, Vite on :5173
 
 Open http://localhost:5173. Vite proxies `/api` to Rails.
 
-## Demo login
+## Demo login (local)
 
-`hr@example.com` / `password`
+`hr@example.com` / `password` when running locally or with Docker. The live demo uses different credentials.
 
 To use different credentials, set `HR_EMAIL` and `HR_PASSWORD` before seeding.
 
