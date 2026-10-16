@@ -1,18 +1,22 @@
 import { useState } from 'react'
-import { Button, Layout, Space, Typography } from 'antd'
+import { Alert, Button, Layout, Space, Typography } from 'antd'
 import { api } from './api.js'
 
 const { Header, Content } = Layout
 
 function AppLayout({ user, onLogout }) {
   const [loggingOut, setLoggingOut] = useState(false)
+  const [error, setError] = useState(null)
 
   async function handleLogout() {
+    setError(null)
     setLoggingOut(true)
     try {
       await api('/session', { method: 'DELETE' })
-    } finally {
       onLogout()
+    } catch (err) {
+      setError(`Logout failed: ${err.message}`)
+      setLoggingOut(false)
     }
   }
 
@@ -30,6 +34,7 @@ function AppLayout({ user, onLogout }) {
         </Space>
       </Header>
       <Content style={{ padding: 24 }}>
+        {error && <Alert type="error" message={error} showIcon closable style={{ marginBottom: 16 }} />}
         <Typography.Text>Welcome.</Typography.Text>
       </Content>
     </Layout>
