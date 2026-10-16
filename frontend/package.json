@@ -11,6 +11,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@ant-design/charts": "^2.6.7",
     "antd": "^6.6.6",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
