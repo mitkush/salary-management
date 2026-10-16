@@ -14,7 +14,8 @@ description: Push the current branch and create or update its GitHub PR against 
 `git push -u origin <branch>`
 
 ## 3. Draft
-- Read every commit on the branch: `git log main..HEAD`, plus the diff where needed.
+- Run `git fetch origin` first, because local `main` can fall behind after merges on GitHub.
+- Read every commit on the branch: `git log origin/main..HEAD`, plus `git diff origin/main...HEAD` where needed.
 - Check whether a PR already exists: `gh pr view --json number,title,body`.
 - Write a title in conventional commit style (`type(scope): short message`).
 - Write the description from scratch, covering all commits on the branch, using this template:
