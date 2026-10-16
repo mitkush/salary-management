@@ -320,3 +320,27 @@ Also align the commit-granularity wording across CLAUDE.md and the review skill.
   - Before that, they had failed for the wrong reason, because jsdom has no `ResizeObserver`. A stub fixed the test setup.
 - **Lint:** oxlint flagged a ref read during render (a false alarm). The debouncer is now created in the event handler instead.
 - The review skill's `/code-review` step found all three bugs. Claude confirmed the stale-URL one in react-router 8.4's source.
+
+## 19. Dashboard
+**Prompt:** Build the insights dashboard. I decided:
+- use `@ant-design/charts` for a donut chart of cost by country or department, with the total in the centre, tooltips showing name, value and percent, and a switch between the two views
+- `/` goes to the dashboard
+- the median is rounded to cents in SQL
+
+**Claude produced:**
+- **`SalaryStatsQuery`:** one SQL query over active employees' current salary, built on the existing `current_for` and status scopes.
+  - **Numbers:** headcount, total, min, max, average and median (`percentile_cont`), with an optional grouping.
+  - **Share:** each group's share of the total cost is calculated in SQL (a window function), so the UI doesn't calculate it.
+- **`GET /api/insights`:** returns 400 for an unknown `group_by`.
+- **Dashboard page:**
+  - six stat cards and the donut
+  - shared filters (extracted from the employee list, now that two pages use them)
+  - lazy-loaded
+- **Pushback and checks:**
+  - **New package:** `@ant-design/charts` wasn't in our stack yet; it's a new package.
+  - **Brakeman:** it flagged a possible SQL injection in a hand-built SQL string. The query was rewritten with ActiveRecord `from`/`group`/`pluck`, so no warning needed to be ignored.
+  - **Validation:** a broad `rescue ArgumentError` was replaced by checking `group_by` up front.
+  - **Bundle size:** the chart library took the JS bundle from 462 kB to 2.7 MB. Importing from `@ant-design/plots` measured the same. Lazy loading brings everything except the dashboard to about 1.2 MB.
+- **On the 10k seed:** the median is $76,339.42, matching the earlier `EXPLAIN` check. The summary query takes 77 ms on its first run and the breakdown 22 ms.
+
+**Follow-ups:** split the shared chart code out of the main bundle.

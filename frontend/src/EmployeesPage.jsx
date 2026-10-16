@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Alert, Flex, Input, Select, Table, Tag, Typography } from 'antd'
 import { Link, useSearchParams } from 'react-router'
 import { api } from './api.js'
+import EmployeeFilters from './EmployeeFilters.jsx'
 import { STATUS_COLORS, formatMoney } from './format.js'
 import { applyFilterChanges, committedSearch, createSearchDebouncer, searchBoxText, typedSearch } from './searchState.js'
 
@@ -89,31 +90,7 @@ function EmployeesPage() {
           onChange={(event) => handleSearchChange(event.target.value)}
           style={{ width: 240 }}
         />
-        <Select
-          placeholder="Country"
-          allowClear
-          value={query.country_id ? Number(query.country_id) : undefined}
-          options={filterOptions.countries.map((country) => ({ value: country.id, label: country.name }))}
-          onChange={(value) => updateFilters({ country_id: value })}
-          style={{ width: 180 }}
-        />
-        <Select
-          placeholder="Department"
-          allowClear
-          value={query.department}
-          options={filterOptions.departments.map((department) => ({ value: department, label: department }))}
-          onChange={(value) => updateFilters({ department: value })}
-          style={{ width: 180 }}
-        />
-        <Select
-          placeholder="Job title"
-          allowClear
-          showSearch
-          value={query.job_title}
-          options={filterOptions.job_titles.map((title) => ({ value: title, label: title }))}
-          onChange={(value) => updateFilters({ job_title: value })}
-          style={{ width: 220 }}
-        />
+        <EmployeeFilters query={query} options={filterOptions} onChange={updateFilters} />
         <Select
           placeholder="Status"
           allowClear

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { Alert, Button, Flex, Result, Spin } from 'antd'
 import { Link, Navigate, Route, Routes } from 'react-router'
 import { api, setUnauthorizedHandler } from './api.js'
@@ -6,6 +6,8 @@ import AppLayout from './AppLayout.jsx'
 import EmployeeDetailPage from './EmployeeDetailPage.jsx'
 import EmployeesPage from './EmployeesPage.jsx'
 import LoginPage from './LoginPage.jsx'
+
+const DashboardPage = lazy(() => import('./DashboardPage.jsx'))
 
 function App() {
   const [user, setUser] = useState(null)
@@ -37,7 +39,15 @@ function App() {
   return (
     <Routes>
       <Route element={<AppLayout user={user} onLogout={() => setUser(null)} />}>
-        <Route index element={<Navigate to="/employees" replace />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route
+          path="dashboard"
+          element={
+            <Suspense fallback={<Flex justify="center" style={{ padding: 48 }}><Spin size="large" /></Flex>}>
+              <DashboardPage />
+            </Suspense>
+          }
+        />
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="employees/:id" element={<EmployeeDetailPage />} />
         <Route
@@ -46,7 +56,7 @@ function App() {
             <Result
               status="404"
               title="Page not found"
-              extra={<Link to="/employees"><Button type="primary">Go to employees</Button></Link>}
+              extra={<Link to="/dashboard"><Button type="primary">Go to dashboard</Button></Link>}
             />
           }
         />

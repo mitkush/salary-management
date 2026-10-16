@@ -12,6 +12,7 @@ Rails.application.routes.draw do
       resource :termination, only: %i[create]
     end
     resource :filter_options, only: %i[show]
+    resource :insights, only: %i[show]
   end
 
   # Defines the root path route ("/")
