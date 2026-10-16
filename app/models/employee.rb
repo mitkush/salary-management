@@ -18,7 +18,7 @@ class Employee < ApplicationRecord
   }
 
   scope :search, ->(query) {
-    next all if query.blank?
+    next all unless query.is_a?(String) && query.present?
 
     pattern = "%#{sanitize_sql_like(query.strip)}%"
     where("full_name ILIKE :pattern OR employee_code ILIKE :pattern", pattern: pattern)
