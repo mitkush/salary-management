@@ -3,6 +3,7 @@ import { Alert, Button, Flex, Result, Spin } from 'antd'
 import { Link, Navigate, Route, Routes } from 'react-router'
 import { api, setUnauthorizedHandler } from './api.js'
 import AppLayout from './AppLayout.jsx'
+import EmployeeDetailPage from './EmployeeDetailPage.jsx'
 import EmployeesPage from './EmployeesPage.jsx'
 import LoginPage from './LoginPage.jsx'
 
@@ -38,6 +39,7 @@ function App() {
       <Route element={<AppLayout user={user} onLogout={() => setUser(null)} />}>
         <Route index element={<Navigate to="/employees" replace />} />
         <Route path="employees" element={<EmployeesPage />} />
+        <Route path="employees/:id" element={<EmployeeDetailPage />} />
         <Route
           path="*"
           element={

@@ -6,6 +6,11 @@ export class ApiError extends Error {
     super(error?.message ?? 'Something went wrong. Please try again.')
     this.status = status
     this.code = error?.code
+    this.details = error?.details ?? {}
+  }
+
+  fieldErrors() {
+    return Object.entries(this.details).map(([name, errors]) => ({ name, errors }))
   }
 }
 
