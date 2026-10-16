@@ -74,3 +74,13 @@ The entries below are from the Claude Code session.
 **Claude produced:** both files. It corrected the attribution I had given in entry 4.
 
 **I changed:** the git rules. Conventional commits, one branch per piece of work, merge commits (not squash), and I push and open PRs myself.
+
+## 7. PR skill
+**Prompt:** Add a project skill so that saying "create PR" or "update PR" handles the PR:
+- checks: not on main, a clean tree, tests passing
+- pushes the branch
+- creates the PR, or rewrites its description from all commits on the branch
+- shows me the title and description for approval first
+- never merges
+
+**Claude produced:** `.claude/skills/pr/SKILL.md` and an updated git rule in CLAUDE.md. Claude kept the skill invocable by plain words rather than restricting it to `/pr`, and relied on the strict description plus the approval step to stop it running unprompted.

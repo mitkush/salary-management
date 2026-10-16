@@ -54,7 +54,8 @@ A salary management web app for ACME's HR Manager, covering about 10,000 employe
 - Use Conventional Commits: `type(scope): message`, where type is one of `feat`, `fix`, `test`, `refactor`, `docs`, `chore`, `ci` or `build`. Keep each message to a single line, with no co-author line or any other trailer.
 - Put every piece of work on its own branch, e.g. `chore/ai-setup` or `feat/salary-revisions`. No direct commits on `main`.
 - PRs are merged with a merge commit, not squashed, so every commit stays in the history.
-- Never commit without my approval. Never push; I push and open PRs myself.
+- Never commit without my approval.
+- Push and create/update PRs only when I ask, using the `pr` skill. Never merge.
 - Tests must pass before every commit.
 
 ## AI prompt log
