@@ -1,6 +1,11 @@
 module Api
   class SessionsController < BaseController
+    RATE_LIMIT_STORE = ActiveSupport::Cache::MemoryStore.new
+
     allow_unauthenticated_access only: %i[show create]
+    rate_limit to: 10, within: 3.minutes, only: :create, store: RATE_LIMIT_STORE, with: -> {
+      render_error :too_many_requests, "Too many login attempts. Try again in a few minutes.", status: :too_many_requests
+    }
 
     def show
       authenticated?
