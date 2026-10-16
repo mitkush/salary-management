@@ -100,6 +100,13 @@ RSpec.describe "API employee details, revisions and termination", type: :request
         expect(other.salary_revisions.count).to eq(0)
       end
 
+      it "returns 400 in the API error format when the revision fields are missing" do
+        post "/api/employees/#{employee.id}/salary_revisions", params: {}, as: :json
+
+        expect(response).to have_http_status(:bad_request)
+        expect(json).to eq("error" => { "code" => "bad_request", "message" => "Missing or invalid parameters." })
+      end
+
       it "returns 404 for an unknown employee" do
         post "/api/employees/0/salary_revisions", params: { salary_revision: valid }, as: :json
 
