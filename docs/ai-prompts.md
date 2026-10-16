@@ -442,3 +442,13 @@ Split into two PRs (not stacked), backend first.
 - **Month helpers** `toMonthParam`, `monthLabel` and `findRun`, with tests.
 - **The Payroll page and adjustment modal.** Entries come back from the API after each change, and 409/400 messages appear as an alert with the server's text.
 - **A spec that first failed for the wrong reason:** a factory employee code collided with a fixed `EMP00001`. Fixed in the spec before committing.
+
+## 24. UI fixes
+**Prompt:** Remove the white gap around the page. Filters can't be cleared once selected, so add `allowClear`.
+
+**Claude pushed back:** `allowClear` was already on every filter. When asked, I confirmed no clear icon appears at all. Claude couldn't reproduce why without a browser, so it added a visible "Clear filters" button instead of guessing.
+
+**Claude produced:**
+- `body { margin: 0 }` in `index.html`.
+- `clearFilters` and `hasFilters` (test-first). They keep the page size and the dashboard view.
+- A "Clear filters" button on the employee list and the dashboard. It shows only when a filter is set, and on the employee list it also cancels a pending delayed search.
