@@ -1,0 +1,36 @@
+module Api
+  class SessionsController < BaseController
+    RATE_LIMIT_STORE = ActiveSupport::Cache::MemoryStore.new
+
+    allow_unauthenticated_access only: %i[show create]
+    rate_limit to: 10, within: 3.minutes, only: :create, store: RATE_LIMIT_STORE, with: -> {
+      render_error :too_many_requests, "Too many login attempts. Try again in a few minutes.", status: :too_many_requests
+    }
+
+    def show
+      authenticated?
+      render json: { authenticated: Current.user.present?, user: user_json(Current.user), csrf_token: form_authenticity_token }
+    end
+
+    def create
+      if user = User.authenticate_by(email_address: params[:email_address].to_s, password: params[:password].to_s)
+        reset_session
+        start_new_session_for user
+        render json: { user: user_json(user), csrf_token: form_authenticity_token }
+      else
+        render_error :invalid_credentials, "Invalid email or password.", status: :unauthorized
+      end
+    end
+
+    def destroy
+      terminate_session
+      reset_session
+      render json: { csrf_token: form_authenticity_token }
+    end
+
+    private
+      def user_json(user)
+        user && { id: user.id, email_address: user.email_address }
+      end
+  end
+end

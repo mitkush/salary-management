@@ -57,7 +57,8 @@ A salary management web app for ACME's HR Manager, covering about 10,000 employe
 - PRs are merged with a merge commit, not squashed, so every commit stays in the history.
 - Never commit without my approval.
 - Push and create/update PRs only when I ask, using the `pr` skill. Never merge.
-- Tests must pass before every commit.
+- Tests pass before every commit, except a `test:` commit with failing specs that the very next `feat:`/`fix:` commit makes pass.
+- TDD commits come in pairs, one per meaningful piece: first `test:` with the failing specs, then `feat:`/`fix:` with the code that makes them pass.
 
 ## AI prompt log
 After each meaningful task, add an entry to `docs/ai-prompts.md` with:

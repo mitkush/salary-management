@@ -181,3 +181,54 @@ Also align the commit-granularity wording across CLAUDE.md and the review skill.
 - Keep oxlint.
 - Remove unused files: PWA views and routes, `app/assets`, the layout, the Rails icons and the `@types` packages.
 - The `/api` route check: plain `start_with?("/api")` would also have excluded paths like `/apiary`. It now matches only `/api` or `/api/...`, with a spec for each.
+
+## 13. HR login
+**Prompt:**
+- Use the Rails 8 auth generator, without password reset, the mailer or HTML views. Login comes from React.
+- JSON login and logout. Every `/api` endpoint needs login and returns 401 in our error format; the React page and `/up` stay open.
+- An httponly cookie, CSRF protection, a login rate limit, and a seeded HR user from environment variables.
+- A simple Ant Design login page, and Logout.
+- Built test-first.
+
+**Claude produced:**
+- A plan based on the generator's actual templates:
+  - **Trimmed from the generator:** password reset and HTML views. Without Action Mailer, the generated `PasswordsController` would have been broken anyway.
+  - **Where login is required:** the `Authentication` concern goes only in `Api::BaseController`, so the React page and `/up` stay open.
+  - **Login check after refresh:** `GET /api/session` returns the login status and a CSRF token, and React calls it on load.
+  - **CSRF:** Rails' built-in protection, with the token sent as an `X-CSRF-Token` header and rotated by resetting the session on login.
+  - **Rate limit:** a dedicated memory store, because the test cache counts nothing and a spec could never trigger the limit.
+- Specs for:
+  - login success and failure
+  - identical errors for a wrong password and an unknown email
+  - the cookie flags and 1-day expiry
+  - logout
+  - 401
+  - CSRF and token rotation
+  - the rate limit
+  - the seed
+- An end-to-end check with curl against a real server with CSRF protection on.
+- The React login page, the layout with Logout, and a `fetch` wrapper that adds the CSRF token and returns to login on 401. No new packages.
+- Checks along the way:
+  - **Session expiry:** Rails already rejects expired signed cookies on the server, so an extra `created_at` session filter wasn't needed.
+  - **Rate-limit spec:** with only the `rate_limit` line removed, it failed with 200 instead of 429, so it tests the limit and not just the store.
+
+**I changed:**
+- **Cookie expiry:** 1 day instead of Claude's suggested 2 weeks, because this is salary data.
+- **Login errors:** a wrong password and an unknown email must give exactly the same error, checked in a spec.
+- **Following TDD:** Claude first wrote all the controller code for the specs in one go. I asked for real TDD, so the code was rebuilt one behaviour at a time, with each spec shown failing for the right reason first.
+- **Commit pairs:** failing specs are committed first as `test:`, then the code as `feat:`, one pair per meaningful piece. "Tests pass before every commit" now has an exception for those `test:` commits.
+- **Expiry spec:** made stricter, so it sends the expired cookie back by hand and proves the server rejects it.
+- **Deploy:** I'll set my own `HR_PASSWORD` on the VM.
+
+## 14. Fixes from the PR 4 review
+**Prompt:** Fix the review findings: logout should return a new CSRF token (failing spec first), clear the rate-limit store before every spec and check with random seeds, keep HR logged in and show the error when logout fails, and add a `WEB_CONCURRENCY` deploy note.
+
+**Claude produced:**
+- **Flaky suite fixed:** the rate-limit store is now cleared before every spec. Before, 7 of 60 random orders failed; after, 0 of 60 fail, and the 7 previously failing seeds pass on the full suite.
+- **Logout:** it now returns `200 { csrf_token }`.
+  - **Specs first:** the two logout specs changed from 204 to 200, and a new spec covers logging back in from the same tab. All three failed before the fix.
+  - **Why:** without this, logging back in after logout in the same tab failed with 422 until a refresh. The review skill's `/code-review` step found this.
+- **Failed logout:** the app now shows the error and keeps HR logged in, instead of showing the login page while the server session was still valid.
+- **Deploy checklist:** leave `WEB_CONCURRENCY` unset, because the rate limit is counted per process.
+
+**I changed:** nothing. I accepted all four. I skipped cleaning up expired session rows for now.
