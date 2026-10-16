@@ -117,6 +117,18 @@ RSpec.describe "API payroll runs", type: :request do
       expect(sheet.row(2)).to eq([ "EMP00001", "Priya Shah", "998877665544", 31, 10000, 1000, 0, 0, nil, 2000, 7000 ])
     end
 
+    it "sorts the export by employee code" do
+      %w[EMP00003 EMP00002].each do |code|
+        create(:employee, employee_code: code, country: india, joined_on: Date.new(2025, 1, 1)).tap { |e| create(:salary_revision, employee: e) }
+      end
+      put "/api/payroll_runs/2026-10", as: :json
+
+      get "/api/payroll_runs/2026-10/export"
+
+      file = Tempfile.new([ "payroll", ".xlsx" ]).tap { |f| f.binmode; f.write(response.body); f.rewind }
+      expect(Roo::Excelx.new(file.path).sheet(0).column(1).drop(1)).to eq(%w[EMP00001 EMP00002 EMP00003])
+    end
+
     it "returns 404 when exporting a month without a run" do
       get "/api/payroll_runs/2026-05/export"
 

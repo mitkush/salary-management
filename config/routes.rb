@@ -14,6 +14,10 @@ Rails.application.routes.draw do
     resource :filter_options, only: %i[show]
     resource :insights, only: %i[show]
     resources :countries, only: %i[index update]
+    resources :payroll_runs, only: %i[index update], param: :month do
+      get :export, on: :member
+      resources :entries, only: %i[index update], controller: "payroll_entries"
+    end
     resources :employee_imports, only: %i[create] do
       get :template, on: :collection
     end
