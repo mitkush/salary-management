@@ -11,6 +11,10 @@ module Api
       render_error :validation_failed, errors.full_messages.to_sentence, status: :unprocessable_content, details: errors.to_hash
     end
 
+    rescue_from ActionController::ParameterMissing do
+      render_error :bad_request, "Missing or invalid parameters.", status: :bad_request
+    end
+
     rescue_from ActionController::InvalidAuthenticityToken do
       render_error :invalid_csrf_token, "Your session has expired. Please refresh the page.", status: :unprocessable_content
     end
