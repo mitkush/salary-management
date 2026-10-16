@@ -1,0 +1,30 @@
+class SalaryRevision < ApplicationRecord
+  REASONS = %w[initial increment promotion correction other].freeze
+
+  belongs_to :employee
+
+  validates :effective_on, presence: true
+  validates :effective_on, uniqueness: { scope: :employee_id, message: "already has a revision for this employee" }
+  validates :reason, inclusion: { in: REASONS }
+  validates :annual_base, :annual_allowances, :annual_deductions, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validate :effective_on_within_employment
+
+  def readonly?
+    persisted?
+  end
+
+  def never_applies?
+    employee.terminated_on.present? && effective_on > employee.terminated_on
+  end
+
+  private
+    def effective_on_within_employment
+      return if effective_on.blank? || employee.blank?
+
+      if effective_on < employee.joined_on
+        errors.add(:effective_on, "can't be before the joining date")
+      elsif employee.terminated_on && effective_on > employee.terminated_on
+        errors.add(:effective_on, "can't be after the last working day")
+      end
+    end
+end

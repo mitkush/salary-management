@@ -2,6 +2,7 @@ class Employee < ApplicationRecord
   STATUSES = %w[active upcoming terminated].freeze
 
   belongs_to :country
+  has_many :salary_revisions, dependent: :restrict_with_exception
 
   validates :employee_code, presence: true, uniqueness: true
   validates :full_name, :department, :job_title, :bank_account_number, :joined_on, presence: true
@@ -22,6 +23,10 @@ class Employee < ApplicationRecord
     elsif terminated_on && terminated_on < today then "terminated"
     else "active"
     end
+  end
+
+  def current_revision
+    salary_revisions.where(effective_on: ..Date.current).order(effective_on: :desc).first
   end
 
   def masked_bank_account

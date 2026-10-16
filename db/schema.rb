@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_16_151228) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_16_151316) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -45,6 +45,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_151228) do
     t.check_constraint "terminated_on >= joined_on", name: "employees_terminated_after_joined"
   end
 
+  create_table "salary_revisions", force: :cascade do |t|
+    t.bigint "employee_id", null: false
+    t.date "effective_on", null: false
+    t.decimal "annual_base", precision: 12, scale: 2, null: false
+    t.decimal "annual_allowances", precision: 12, scale: 2, null: false
+    t.decimal "annual_deductions", precision: 12, scale: 2, null: false
+    t.virtual "annual_gross", type: :decimal, precision: 12, scale: 2, as: "(annual_base + annual_allowances)", stored: true
+    t.string "reason", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["employee_id", "effective_on"], name: "index_salary_revisions_on_employee_id_and_effective_on", unique: true
+    t.check_constraint "annual_base >= 0::numeric AND annual_allowances >= 0::numeric AND annual_deductions >= 0::numeric", name: "salary_revisions_amounts_not_negative"
+    t.check_constraint "reason::text = ANY (ARRAY['initial'::character varying, 'increment'::character varying, 'promotion'::character varying, 'correction'::character varying, 'other'::character varying]::text[])", name: "salary_revisions_reason_allowed"
+  end
+
   create_table "sessions", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "ip_address"
@@ -63,5 +78,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_151228) do
   end
 
   add_foreign_key "employees", "countries"
+  add_foreign_key "salary_revisions", "employees"
   add_foreign_key "sessions", "users"
 end
