@@ -115,3 +115,13 @@ describe('clearing filters', () => {
     expect(hasFilters(new URLSearchParams('status=active'))).toBe(true)
   })
 })
+
+describe('the dashboard month', () => {
+  it('is kept when a filter changes or filters are cleared', () => {
+    const params = new URLSearchParams('as_of=2026-08&country_id=1')
+
+    expect(applyFilterChanges(params, { department: 'Finance' }).get('as_of')).toBe('2026-08')
+    expect(clearFilters(params).get('as_of')).toBe('2026-08')
+    expect(hasFilters(new URLSearchParams('as_of=2026-08'))).toBe(false)
+  })
+})
