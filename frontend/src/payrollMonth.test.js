@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findRun, missingRunMessage, monthLabel, previousMonth, recentMonths, toMonthParam } from './payrollMonth.js'
+import { dashboardQuery, findRun, missingRunMessage, monthLabel, monthOptions, previousMonth, recentMonths, toMonthParam } from './payrollMonth.js'
 
 describe('payroll month helpers', () => {
   it('turns a date into the API month parameter', () => {
@@ -35,5 +35,20 @@ describe('payroll month helpers', () => {
   it('gives the previous month as the default, across a year boundary too', () => {
     expect(previousMonth(new Date(2026, 9, 16))).toBe('2026-09')
     expect(previousMonth(new Date(2027, 0, 5))).toBe('2026-12')
+  })
+
+  it('adds a selected month from the URL that is older than the recent months', () => {
+    const options = monthOptions(new Date(2026, 9, 16), '2023-12')
+
+    expect(options).toHaveLength(25)
+    expect(options.at(-1)).toEqual({ value: '2023-12', label: 'Dec 2023' })
+    expect(monthOptions(new Date(2026, 9, 16), '2026-09')).toHaveLength(24)
+  })
+
+  it('always sends the month to the API, defaulting to last month, and leaves out the UI-only view', () => {
+    const today = new Date(2026, 10, 1, 2)
+
+    expect(dashboardQuery(new URLSearchParams('view=department&country_id=1'), today)).toEqual({ country_id: '1', as_of: '2026-10' })
+    expect(dashboardQuery(new URLSearchParams('as_of=2025-03'), today)).toEqual({ as_of: '2025-03' })
   })
 })
