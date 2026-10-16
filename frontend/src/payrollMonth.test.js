@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findRun, missingRunMessage, monthLabel, toMonthParam } from './payrollMonth.js'
+import { findRun, missingRunMessage, monthLabel, previousMonth, recentMonths, toMonthParam } from './payrollMonth.js'
 
 describe('payroll month helpers', () => {
   it('turns a date into the API month parameter', () => {
@@ -21,5 +21,19 @@ describe('payroll month helpers', () => {
   it('explains when the month in the URL has no payroll run', () => {
     expect(missingRunMessage('2026-01')).toBe('No payroll for January 2026.')
     expect(missingRunMessage('abc')).toBe('No payroll for this month.')
+  })
+
+  it('lists recent months, newest first, labelled like "Sep 2026"', () => {
+    const months = recentMonths(new Date(2026, 9, 16), 24)
+
+    expect(months).toHaveLength(24)
+    expect(months[0]).toEqual({ value: '2026-10', label: 'Oct 2026' })
+    expect(months[1]).toEqual({ value: '2026-09', label: 'Sep 2026' })
+    expect(months[23]).toEqual({ value: '2024-11', label: 'Nov 2024' })
+  })
+
+  it('gives the previous month as the default, across a year boundary too', () => {
+    expect(previousMonth(new Date(2026, 9, 16))).toBe('2026-09')
+    expect(previousMonth(new Date(2027, 0, 5))).toBe('2026-12')
   })
 })
