@@ -7,6 +7,9 @@ module Api
       revision = employee.salary_revisions.create!(revision_params)
 
       render json: revision_json(revision), status: :created
+    rescue ActiveRecord::RecordNotUnique
+      render_error :validation_failed, "Effective on already has a revision for this employee",
+        status: :unprocessable_content, details: { effective_on: [ "already has a revision for this employee" ] }
     end
 
     private
