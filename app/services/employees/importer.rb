@@ -7,6 +7,7 @@ module Employees
     EMPLOYEE_FIELDS = %w[employee_code full_name department job_title bank_account_number joined_on].freeze
     AMOUNT_FIELDS = %w[annual_base annual_allowances annual_deductions].freeze
     BATCH_SIZE = 1_000
+    TEXT_COLUMNS = %w[employee_code bank_account_number].freeze
     MAX_FILE_SIZE = 5.megabytes
     XLSX_SIGNATURE = "PK\x03\x04".b
 
@@ -19,7 +20,11 @@ module Employees
 
     def self.template
       package = Axlsx::Package.new
-      package.workbook.add_worksheet(name: "Employees") { |sheet| sheet.add_row(COLUMNS) }
+      text = package.workbook.styles.add_style(num_fmt: 49)
+      package.workbook.add_worksheet(name: "Employees") do |sheet|
+        sheet.add_row(COLUMNS)
+        TEXT_COLUMNS.each { |column| sheet.column_info[COLUMNS.index(column)].style = text }
+      end
       package.to_stream.read
     end
 
