@@ -1,13 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ApiError } from './api.js'
 import { NETWORK_ERROR_MESSAGE, formErrorUpdate } from './formErrors.js'
 
 describe('formErrorUpdate', () => {
-  it('shows a network message when the server could not be reached', () => {
-    expect(formErrorUpdate(new TypeError('Failed to fetch'), ['terminated_on'])).toEqual({
-      fields: [],
-      message: NETWORK_ERROR_MESSAGE,
-    })
+  it('shows a network message when the server could not be reached, and logs the error', () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const error = new TypeError('Failed to fetch')
+
+    expect(formErrorUpdate(error, ['terminated_on'])).toEqual({ fields: [], message: NETWORK_ERROR_MESSAGE })
+    expect(log).toHaveBeenCalledWith(error)
+    log.mockRestore()
   })
 
   it('puts API errors under the matching fields', () => {
