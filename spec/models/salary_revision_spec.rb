@@ -87,6 +87,15 @@ RSpec.describe SalaryRevision, type: :model do
       expect(employee.current_revision).to eq(today)
     end
 
+    it "stops at the last working day when the employee was terminated earlier than a revision" do
+      initial = create(:salary_revision, employee: employee, effective_on: Date.new(2025, 3, 1))
+      create(:salary_revision, employee: employee, effective_on: Date.new(2026, 6, 1), reason: "increment")
+      employee.terminate!(Date.new(2026, 5, 1))
+
+      expect(employee.current_revision).to eq(initial)
+      expect(SalaryRevision.current_for([ employee.id ])).to eq([ initial ])
+    end
+
     it "is nil for an upcoming employee whose only revision is in the future" do
       upcoming = create(:employee, joined_on: Date.new(2026, 11, 1))
       create(:salary_revision, employee: upcoming)

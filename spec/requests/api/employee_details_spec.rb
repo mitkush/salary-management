@@ -42,6 +42,18 @@ RSpec.describe "API employee details, revisions and termination", type: :request
         expect(response.body).not_to include("123456789876")
       end
 
+      it "doesn't report a revision after the last working day as the current salary" do
+        create(:salary_revision, employee: employee, effective_on: Date.new(2026, 6, 1), reason: "increment",
+          annual_base: "90000.00", annual_allowances: "0.00")
+        employee.terminate!(Date.new(2026, 5, 1))
+
+        get "/api/employees/#{employee.id}", as: :json
+        expect(json.dig("employee", "current_annual_gross")).to eq("66000.0")
+
+        get "/api/employees", as: :json
+        expect(json["data"].first["current_annual_gross"]).to eq("66000.0")
+      end
+
       it "marks a revision dated after the last working day as never applying" do
         future = create(:salary_revision, employee: employee, effective_on: Date.new(2027, 1, 1), reason: "increment")
         employee.terminate!(Date.new(2026, 12, 31))
