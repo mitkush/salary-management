@@ -87,11 +87,16 @@ RSpec.describe "API session", type: :request do
       expect(json).to include("authenticated" => true, "user" => { "id" => user.id, "email_address" => "hr@example.com" })
     end
 
-    it "treats a session older than a day as logged out" do
+    it "rejects the session cookie on the server once it is older than a day" do
       sign_in(user, password: "s3cret-pass")
+      session_cookie = Array(response.headers["Set-Cookie"]).flat_map { |c| c.split("\n") }
+        .find { |c| c.start_with?("session_id=") }.split(";").first
+
+      get "/api/session", headers: { "Cookie" => session_cookie }, as: :json
+      expect(json["authenticated"]).to be(true)
 
       travel 1.day + 1.second do
-        get "/api/session", as: :json
+        get "/api/session", headers: { "Cookie" => session_cookie }, as: :json
 
         expect(json["authenticated"]).to be(false)
       end
