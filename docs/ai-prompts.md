@@ -84,3 +84,12 @@ The entries below are from the Claude Code session.
 - never merges
 
 **Claude produced:** `.claude/skills/pr/SKILL.md` and an updated git rule in CLAUDE.md. Claude kept the skill invocable by plain words rather than restricting it to `/pr`, and relied on the strict description plus the approval step to stop it running unprompted.
+
+## 8. PR review skill
+**Prompt:** Add a project skill that reviews a PR before merge like a strict senior engineer, without unnecessary noise. It checks scope, logic, tests, database, performance, security, API, frontend, code quality, commits and docs. It also runs the built-in `/security-review` and `/code-review`. It reports a verdict and findings, and never fixes, merges or comments.
+
+**Claude produced:** `.claude/skills/pr-review/SKILL.md`, with these changes from my prompt:
+- It refuses to start on a dirty tree, and switches back to the original branch when it's done.
+- Business rules are read from `docs/requirements.md` instead of copied into the skill.
+- "Heavy calculations in SQL" was narrowed to dashboard aggregates. Per-employee payroll math stays in a Ruby service with BigDecimal, as long as it's batched.
+- Findings from the built-in reviews are deduplicated and verified before they're reported.
