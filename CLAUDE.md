@@ -41,7 +41,8 @@ A salary management web app for ACME's HR Manager, covering about 10,000 employe
 - The UI shows only the last 4 digits of a bank account number.
 
 ## Frontend
-- React with Vite, in plain JavaScript, using Ant Design.
+- React with Vite, in plain JavaScript, using Ant Design and `react-router`. Ask before adding any other package.
+- Keep list filters and pagination in the URL, so Back, Forward and shared links work.
 - No business logic in the UI. Every calculation comes from the API.
 
 ## Commands

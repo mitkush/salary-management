@@ -261,3 +261,32 @@ Also align the commit-granularity wording across CLAUDE.md and the review skill.
 - Statuses: approved `upcoming` and documented it in the requirements.
 - Termination: the locked-month check is noted as a follow-up for payroll.
 - Two stacked PRs instead of one.
+
+## 16. Employees and salary revisions (frontend) and the schema mismatch
+**Prompt:** Build the employee list and detail pages with `react-router` and server-side pagination, as a second PR stacked on the backend PR.
+
+**Claude produced:**
+- **Routing:** `react-router` 8.4. I checked its exports before using it.
+- **Employee list:**
+  - search, filters and pagination, all kept in the URL
+  - a search box that waits 300 ms after you stop typing
+  - loading, empty and error states
+- **Employee detail:**
+  - details, and the revision history with a "Never applied" tag
+  - an "Add revision" modal with a note that revisions can't be edited after saving, only replaced by a new one
+  - a "Terminate" modal that warns it can't be undone
+  - errors from the API (422) shown under the matching form fields
+- **Bugs Claude found in its own diffs before committing:**
+  - the Back button after a search put the old search back into the URL
+  - changing a filter reset the page size
+  - switching from one employee to another briefly showed the previous employee
+- **Lint:** oxlint flagged setting state directly inside an effect, so the loading state is now derived from the data instead.
+- **Schema mismatch on PR 5:**
+  - **What happened:** CI's schema check failed because my local database printed the `reason` check constraint differently from a database built fresh from the migrations, on the same Postgres 16.15. The rule itself was identical.
+  - **What was ruled out:** Claude checked my suggested cause (a migration edited after it ran) and its own guess (the text changes when `schema.rb` is loaded and dumped again), and both were wrong. **The real cause wasn't found.**
+  - **Fix:** rebuild the databases from the migrations and commit the regenerated `schema.rb`.
+
+**I changed:**
+- Asked for the note in the "Add revision" modal that revisions can't be edited after saving.
+- The `initial` reason stays available only through the API, used by the seed and the import, by choice. HR picks increment, promotion, correction or other in the UI.
+- I checked all scenarios in the browser myself.
