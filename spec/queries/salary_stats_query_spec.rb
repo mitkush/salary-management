@@ -22,7 +22,7 @@ RSpec.describe SalaryStatsQuery do
     employee(gross: "100000.00")
 
     expect(summary).to eq(
-      headcount: 3, total: BigDecimal("240000"), min: BigDecimal("60000"), max: BigDecimal("100000"),
+      headcount: 3, total: BigDecimal("240000"), monthly_cost: BigDecimal("20000"), min: BigDecimal("60000"), max: BigDecimal("100000"),
       average: BigDecimal("80000"), median: BigDecimal("80000")
     )
   end
@@ -32,6 +32,12 @@ RSpec.describe SalaryStatsQuery do
     employee(gross: "80000.01")
 
     expect(summary).to include(median: BigDecimal("70000.01"), average: BigDecimal("70000.01"))
+  end
+
+  it "gives the monthly cost as annual total / 12, rounded to cents" do
+    employee(gross: "100000.00")
+
+    expect(summary[:monthly_cost]).to eq(BigDecimal("8333.33"))
   end
 
   it "counts only active employees" do
@@ -64,7 +70,7 @@ RSpec.describe SalaryStatsQuery do
   end
 
   it "returns zero headcount and total, and no other values, when nobody matches" do
-    expect(summary).to eq(headcount: 0, total: BigDecimal("0"), min: nil, max: nil, average: nil, median: nil)
+    expect(summary).to eq(headcount: 0, total: BigDecimal("0"), monthly_cost: BigDecimal("0"), min: nil, max: nil, average: nil, median: nil)
   end
 
   describe "as of a past date" do

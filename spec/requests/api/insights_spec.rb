@@ -37,7 +37,7 @@ RSpec.describe "API insights", type: :request do
 
       expect(json).to eq(
         "as_of" => "2026-09-30",
-        "summary" => { "headcount" => 3, "total" => "340000.0", "min" => "60000.0", "max" => "200000.0",
+        "summary" => { "headcount" => 3, "total" => "340000.0", "monthly_cost" => "28333.33", "min" => "60000.0", "max" => "200000.0",
                        "average" => "113333.33", "median" => "80000.0" },
         "groups" => []
       )
