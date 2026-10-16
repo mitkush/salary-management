@@ -471,3 +471,10 @@ Split into two PRs (not stacked), backend first.
 - The month picker, the "As of" date from the API, and the column and line charts.
 
 **Spec changes:** the existing spec that checks the exact insights response now includes the new `as_of` field, a deliberate change to the response format.
+- **Follow-up fixes in the same PR:**
+  - **Cards:** "Annual salary cost", plus a new "Monthly salary cost" card. The monthly figure is an API `monthly_cost` computed in SQL, which the trends query now reuses (test-first).
+  - **Month selector:** a select of the last 24 months showing "Sep 2026". It replaces the date picker, which would have needed `dayjs` as a new direct package.
+  - **Headcount tooltip:** explains that payroll also includes leavers who worked part of the month.
+  - **Donut:** percentages from the API's `share`.
+  - **Layout:** the donut and the column chart side by side, the line chart below.
+  - **Description:** a shorter line.
