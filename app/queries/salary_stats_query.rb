@@ -4,6 +4,7 @@ class SalaryStatsQuery
   AGGREGATES = {
     headcount: "COUNT(*)",
     total: "COALESCE(SUM(current.annual_gross), 0)",
+    monthly_cost: "ROUND(COALESCE(SUM(current.annual_gross), 0) / 12, 2)",
     min: "MIN(current.annual_gross)",
     max: "MAX(current.annual_gross)",
     average: "ROUND(AVG(current.annual_gross), 2)",

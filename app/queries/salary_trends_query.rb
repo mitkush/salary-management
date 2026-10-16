@@ -12,8 +12,8 @@ class SalaryTrendsQuery
 
     @starts.map do |start|
       label = start.strftime("%Y-%m")
-      total = SalaryStatsQuery.new(**@filters, as_of: point_in(start)).summary[:total]
-      { month: label, monthly_cost: (total / 12).round(2, :half_up), joiners: joiners.fetch(label, 0), leavers: leavers.fetch(label, 0) }
+      monthly_cost = SalaryStatsQuery.new(**@filters, as_of: point_in(start)).summary[:monthly_cost]
+      { month: label, monthly_cost: monthly_cost, joiners: joiners.fetch(label, 0), leavers: leavers.fetch(label, 0) }
     end
   end
 
