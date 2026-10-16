@@ -45,11 +45,11 @@ A salary management web app for ACME's HR Manager, covering about 10,000 employe
 - No business logic in the UI. Every calculation comes from the API.
 
 ## Commands
-<!-- TODO: fill in after Rails setup -->
-- Setup: `TBD`
-- Run: `TBD`
-- Test: `TBD`
-- Lint: `TBD`
+- Setup: `bin/setup --skip-server` and `npm --prefix frontend ci`
+- Run: `bin/dev` (Rails on :3000, Vite on :5173), or `docker compose up --build` (app on :3000)
+- Test: `bundle exec rspec`, or `docker compose run --rm test`
+- Lint: `bin/rubocop` and `npm --prefix frontend run lint`
+- All backend checks (RuboCop, bundler-audit, Brakeman, RSpec): `bin/ci`
 
 ## Git
 - Use Conventional Commits: `type(scope): message`, where type is one of `feat`, `fix`, `test`, `refactor`, `docs`, `chore`, `ci` or `build`. Keep each message to a single line, with no co-author line or any other trailer. Each commit should be a meaningful working piece.

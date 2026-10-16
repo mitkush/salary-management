@@ -154,3 +154,30 @@ Also align the commit-granularity wording across CLAUDE.md and the review skill.
 - The review skill skips `/security-review` and `/code-review` when every changed file is `.md`, and says so in the result.
 
 **I changed:** nothing. I accepted all four findings as reported, and specified the 5 MB limit.
+
+## 12. Rails setup
+**Prompt:** Set up the app through the build skill:
+- Ruby 3.4.11 and Rails 8.1.4, installed only under 3.4.11
+- React with plain Vite in `frontend/` and Ant Design
+- RSpec and factory_bot
+- Docker from the start: `docker compose up` gives a migrated, seeded app, and `docker compose run --rm test` runs the suite
+- GitHub Actions with separate backend, frontend and docker jobs
+
+**Claude produced:**
+- A setup plan with every `rails new` flag checked against `--help` before running it. Skipped: minitest, jbuilder, Hotwire, the asset pipeline, mailers, Cable, Active Storage, Solid, Kamal and Thruster.
+- The Rails app, RSpec, and a fallback route that serves the React build for every page path outside `/api`, written test-first.
+- A Dockerfile with a Node stage for the frontend build and a `test` stage; force-SSL, assume-SSL and allowed hosts read from environment variables; and a compose file with a clearly labelled local-only secret.
+- The CI workflow, with action versions checked against GitHub.
+- Problems caught along the way:
+  - `rails new --force` dropped `.private/` from `.gitignore`
+  - `.private/` was missing from `.dockerignore`, so the private brief would have been sent to Docker builds
+  - the image build failed because `.ruby-version` wasn't copied before `bundle install`
+  - CI's schema check needed the baseline `db/schema.rb` committed
+  - the current Vite template uses oxlint, not ESLint
+
+**I changed:**
+- Ruby 3.4.11 instead of the installed 3.4.8, and Node 24 LTS everywhere, with `.nvmrc`.
+- Docker moved into the setup instead of waiting for deployment.
+- Keep oxlint.
+- Remove unused files: PWA views and routes, `app/assets`, the layout, the Rails icons and the `@types` packages.
+- The `/api` route check: plain `start_with?("/api")` would also have excluded paths like `/apiary`. It now matches only `/api` or `/api/...`, with a spec for each.
