@@ -232,3 +232,32 @@ Also align the commit-granularity wording across CLAUDE.md and the review skill.
 - **Deploy checklist:** leave `WEB_CONCURRENCY` unset, because the rate limit is counted per process.
 
 **I changed:** nothing. I accepted all four. I skipped cleaning up expired session rows for now.
+
+## 15. Employees and salary revisions (backend)
+**Prompt:**
+- Build employees and salary revisions, plus a 10k seed with realistic data (countries with tax rates, departments, job titles, salary ranges, some employees with 2–3 revisions, a few leavers and a few future joiners).
+- The seed lives in its own file with its own spec, uses a fixed random seed, and inserts quickly.
+- Check the median query with `EXPLAIN ANALYZE`.
+- Ask before adding any package.
+- Split the work into two stacked PRs, backend and frontend.
+
+**Claude produced:**
+- A plan with the decisions I needed to make:
+  - **Packages:** `react-router` for the frontend; pagination done by hand instead of the `pagy` gem
+  - **Statuses:** `active`, `upcoming` and `terminated`
+  - **Termination:** the locked-month check deferred to the payroll feature
+  - **Seed dates:** calculated from today
+- **TDD pairs for:** countries, employees (status at each date boundary, masking, `terminate!`), salary revisions (date rules, reasons, no updates after saving, database-generated `annual_gross`, "never applied" revisions), the seeder, the list API and the detail/revision/termination APIs.
+- **Seeder:** 10,000 employees and about 15,000 revisions in about 2 seconds, using bulk inserts. The same random seed gives identical data, which is checked in the spec.
+- **Median query:** 9 ms under `EXPLAIN ANALYZE` (28 ms before Postgres refreshed its statistics), using the existing unique index.
+- **Checks along the way:**
+  - The "same number of queries" spec was green before the route existed. Loading each employee's salary separately made it fail (30 queries instead of 10), so it does catch N+1 queries.
+  - A request missing its parameters returned 400 as HTML. Claude added a test/fix pair so it now uses our JSON error format.
+  - Confirmed that Rails 8.1 returns the generated `annual_gross` straight after insert.
+
+**Claude's slip:** it committed every test/feat pair without showing me the diff and waiting for my ok, which the build skill requires, because I had only approved the plan. Claude told me before opening the PR. I reviewed the commits and kept them; from then on, Claude stops before each commit.
+
+**I changed:**
+- Statuses: approved `upcoming` and documented it in the requirements.
+- Termination: the locked-month check is noted as a follow-up for payroll.
+- Two stacked PRs instead of one.
