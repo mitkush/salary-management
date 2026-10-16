@@ -26,7 +26,6 @@ flowchart LR
 erDiagram
   COUNTRIES ||--o{ EMPLOYEES : "has"
   EMPLOYEES ||--|{ SALARY_REVISIONS : "has"
-  EMPLOYEES ||--o{ ONE_TIME_ADJUSTMENTS : "has"
   EMPLOYEES ||--o{ PAYROLL_ENTRIES : "paid in"
   PAYROLL_RUNS ||--o{ PAYROLL_ENTRIES : "contains"
   SALARY_REVISIONS ||--o{ PAYROLL_ENTRIES : "used by"
@@ -61,13 +60,7 @@ erDiagram
     decimal annual_allowances
     decimal annual_deductions
     decimal annual_gross "generated"
-  }
-  ONE_TIME_ADJUSTMENTS {
-    bigint id PK
-    bigint employee_id FK
-    date month
-    decimal bonus
-    decimal deduction
+    string reason
   }
   PAYROLL_RUNS {
     bigint id PK
@@ -79,7 +72,14 @@ erDiagram
     bigint payroll_run_id FK
     bigint employee_id FK
     bigint salary_revision_id FK
+    int days_worked
+    decimal monthly_gross
+    decimal monthly_deductions
+    decimal bonus
+    decimal one_time_deduction
+    string adjustment_note
     decimal tax_rate
+    decimal tax
     decimal net
   }
 ```
@@ -91,15 +91,11 @@ All money columns are `decimal(12,2)`. Every column is `NOT NULL` unless marked 
 | `users` | `email_address`, `password_digest` | unique `email_address`. Rails 8's authentication generator also adds a `sessions` table (to confirm at setup). |
 | `countries` | `code` (ISO 2), `name`, `tax_rate decimal(5,4)` | unique `code`, unique `name`, check `tax_rate BETWEEN 0 AND 1` |
 | `employees` | `employee_code`, `full_name`, `country_id`, `department`, `job_title`, `bank_account_number`, `joined_on`, `terminated_on` (nullable) | unique `employee_code`. Indexes on `country_id`, `department`, `job_title`, `terminated_on`. Check `terminated_on >= joined_on`. |
-| `salary_revisions` | `employee_id`, `effective_on`, `annual_base`, `annual_allowances`, `annual_deductions`, `annual_gross` | unique `(employee_id, effective_on)`, which also serves "latest revision" lookups. Checks that amounts are `>= 0`. `annual_gross` is a stored generated column: `annual_base + annual_allowances`. |
-| `one_time_adjustments` | `employee_id`, `month`, `bonus` (default 0), `deduction` (default 0) | unique `(employee_id, month)`. Check that `month` is the 1st and amounts are `>= 0`. |
+| `salary_revisions` | `employee_id`, `effective_on`, `annual_base`, `annual_allowances`, `annual_deductions`, `annual_gross`, `reason` | unique `(employee_id, effective_on)`, which also serves "latest revision" lookups. Checks that amounts are `>= 0`. `annual_gross` is a stored generated column: `annual_base + annual_allowances`. `reason` is one of `initial`, `increment`, `promotion`, `correction` or `other`, enforced by a check constraint. |
 | `payroll_runs` | `month`, `generated_at` | unique `month`, check that `month` is the 1st |
-| `payroll_entries` | `payroll_run_id`, `employee_id`, `salary_revision_id`, plus the snapshot columns below | unique `(payroll_run_id, employee_id)`, index on `employee_id` |
+| `payroll_entries` | `payroll_run_id`, `employee_id`, `salary_revision_id`, `days_worked`, `monthly_gross`, `monthly_deductions`, `bonus` (default 0), `one_time_deduction` (default 0), `adjustment_note` (nullable), `tax_rate decimal(5,4)`, `tax`, `net` | unique `(payroll_run_id, employee_id)`, index on `employee_id` and `salary_revision_id`. Check that `days_worked` is between 1 and 31 and that `bonus` and `one_time_deduction` are `>= 0`. |
 
-`payroll_entries` snapshot columns:
-- **Revision values:** `annual_base`, `annual_allowances`, `annual_deductions`, `annual_gross`
-- **Tax and proration:** `tax_rate`, `days_worked`, `days_in_month`
-- **Amounts:** `monthly_gross`, `monthly_deductions`, `bonus`, `one_time_deduction`, `taxable`, `tax`, `net`
+`payroll_entries` is the only stored payroll. It doesn't copy the revision's amounts, because revisions never change and the entry already has `salary_revision_id`. Taxable (`monthly_gross + bonus`) and days in the month (from the run's month) are calculated when needed, so they aren't stored.
 
 **Derived values, not stored:**
 - **Status:** an employee is active if `terminated_on` is null or on or after today.
@@ -110,13 +106,13 @@ All money columns are `decimal(12,2)`. Every column is `NOT NULL` unless marked 
 
 | Service | Responsibility |
 |---|---|
-| `Payroll::EntryCalculator` | A plain Ruby object. Takes one employee's revision, tax rate, month and adjustment, and returns days worked and every amount (gross, deductions, taxable, tax, net), using `BigDecimal` and the rounding rule. Has no DB access, so it's fast to test. |
-| `Payroll::Generator` | Creates or recalculates a month's run in one transaction. It checks the month rules, loads payable employees in batches with their revision and adjustment, uses `EntryCalculator`, and bulk-inserts the entries. |
-| `Payroll::Exporter` | Builds the Excel file for one run from its stored entries. |
+| `Payroll::EntryCalculator` | A plain Ruby object with `BigDecimal` and the rounding rule, and no DB access, so it's fast to test. It has two steps:<br>**Prorate:** revision + month + employee dates → days worked, monthly gross, monthly deductions.<br>**Settle:** monthly gross, monthly deductions, tax rate, bonus and one-time deduction → tax and net.<br>Generation uses both steps. Editing an adjustment uses only Settle. |
+| `Payroll::Generator` | Creates or recalculates a month's run in one transaction. It checks the month rules, loads eligible employees in batches with the revision in effect on their last day worked, uses `EntryCalculator`, and upserts the entries without touching HR's bonus, deduction or note. |
+| `Payroll::Exporter` | Builds the Excel file for one run from its stored entries, with no recalculation. |
 | `SalaryStatsQuery` (`app/queries`) | Runs every dashboard aggregate in SQL in one place: count, sum, min, max, average and median (`percentile_cont(0.5)`) of `annual_gross` for active employees, with optional filters and an optional `group_by`. |
 | `Employees::Importer` | Reads the uploaded Excel file, validates each row, inserts each valid employee together with their first revision, and returns counts plus per-row errors. |
 
-Revision and termination rules live in model validations, with matching DB constraints where possible. `PayrollRun.locked?(month)` is the single check for locked months, used by the generator, adjustments and termination.
+Revision and termination rules live in model validations, with matching DB constraints where possible. `PayrollRun.locked?(month)` is the single check for locked months, used by the generator, entry updates and termination.
 
 ## 4. API
 
@@ -126,17 +122,17 @@ The API returns JSON under `/api`. Every endpoint except login requires a sessio
 |---|---|---|
 | POST / DELETE | `/api/session` | Log in / log out |
 | GET | `/api/employees?q=&country_id=&department=&job_title=&status=&page=` | Paginated list, with the bank account masked |
-| GET | `/api/employees/:id` | Employee details, revisions and adjustments |
-| POST | `/api/employees/:id/salary_revisions` | Add a revision |
+| GET | `/api/employees/:id` | Employee details and revision history |
+| POST | `/api/employees/:id/salary_revisions` | Add a revision, with a reason |
 | POST | `/api/employees/:id/termination` | Terminate, with `terminated_on` |
-| PUT | `/api/employees/:id/adjustments/:month` | Create or update that month's bonus and deduction |
 | POST | `/api/employee_imports` | Upload an Excel file, returns the import report |
 | GET | `/api/filter_options` | Countries, departments and job titles for the dropdowns |
 | GET | `/api/insights?country_id=&department=&job_title=&group_by=` | Dashboard stats, optionally grouped |
 | GET / PATCH | `/api/countries`, `/api/countries/:id` | List countries and tax rates / update a tax rate |
-| GET | `/api/payroll_runs` | List runs, with a `locked` flag on each |
+| GET | `/api/payroll_runs` | List runs, with a `locked` flag on each and an `outdated` flag on the open run |
 | PUT | `/api/payroll_runs/:month` | Generate, or recalculate if the run exists (`month` = `2026-10`) |
 | GET | `/api/payroll_runs/:month/entries?page=` | Paginated entries |
+| PATCH | `/api/payroll_runs/:month/entries/:id` | Set bonus, one-time deduction and note (open month only). Recalculates that entry. |
 | GET | `/api/payroll_runs/:month/export` | Download the Excel file, with full bank account numbers |
 
 **Errors** all use one format: `{ "error": { "code": "...", "message": "...", "details": { "field": ["..."] } } }`.
@@ -157,9 +153,9 @@ The API returns JSON under `/api`. Every endpoint except login requires a sessio
 | Login | Email and password |
 | Dashboard | Filters, stat cards (headcount, total cost, min, max, average, median), and a chart grouped by country or department |
 | Employees | A searchable, filterable, paginated table showing status and the masked bank account |
-| Employee detail | Employee details, revision history, an "Add revision" modal, a "Terminate" modal, and one-time adjustments for open months |
+| Employee detail | Employee details, revision history with reasons (revisions dated after `terminated_on` marked as never applied), an "Add revision" modal and a "Terminate" modal |
 | Import | File upload, then counts of imported, skipped and failed rows, plus an error table |
-| Payroll | Month picker, "Generate" or "Recalculate" (with confirmation), runs list, entries table with negative net flagged, totals and Export |
+| Payroll | Month picker, "Generate" or "Recalculate" (with confirmation), runs list, entries table with negative net flagged and totals, bonus/deduction/note editing on entries of the open month, an "Outdated" badge when the open month needs recalculating, and Export |
 | Countries | Tax rate per country, editable |
 
 The UI only formats and displays values. Every amount comes from the API.
@@ -170,30 +166,44 @@ The UI only formats and displays values. Every amount comes from the API.
 1. HR picks a month. If a run already exists for the latest month, the UI asks for confirmation before recalculating.
 2. `PUT /api/payroll_runs/:month` is called. The month is rejected if it's in the future or locked.
 3. In one transaction:
-   - create the run, or delete the existing run's entries
-   - load the employees payable that month (`joined_on <= month end` and (`terminated_on` is null or `>= month start`)) in batches, with the revision in effect on each employee's last day worked and that month's adjustment
-   - calculate each entry
-   - bulk-insert the entries
+   - create the run if it doesn't exist
+   - load the employees eligible that month (`joined_on <= month end` and (`terminated_on` is null or `>= month start`)) in batches, with the revision in effect on each employee's last day worked
+   - for each employee, run Prorate, then Settle with the entry's existing bonus and deduction (0 for a new entry)
+   - upsert the entries on `(payroll_run_id, employee_id)`, updating only the calculated columns. Entries are never deleted (see requirements).
    - set `generated_at`
+
+**Outdated check (open month only)**
+
+`PayrollRun#outdated?` is a single `EXISTS` query that is true if, after `generated_at`:
+- a salary revision was created with `effective_on <= month end`, or
+- an employee was created or updated (terminated), or
+- a country's tax rate was updated
+
+It's a little coarse (e.g. a termination in a later month also triggers it), but recalculating when it wasn't needed does no harm.
+
+**Edit a bonus or deduction**
+1. On the Payroll page, HR edits an entry of the open month.
+2. `PATCH /api/payroll_runs/:month/entries/:id` is called. It's rejected if the month is locked.
+3. Settle runs on the entry's stored monthly gross, monthly deductions and tax rate, and saves tax and net. Nothing else is recalculated.
 
 **Excel import**
 1. Upload the file to `POST /api/employee_imports`.
 2. Validate each row: required fields, the country exists, dates and amounts are valid, the code is unique in the DB and within the file. Department and job title are trimmed.
-3. Insert each valid row's employee and first revision (effective `joined_on`). Report skipped rows ("already exists") and failed rows with their row number and reason.
+3. Insert each valid row's employee and first revision (effective `joined_on`, reason `initial`). Report skipped rows ("already exists") and failed rows with their row number and reason.
 
 **Add a revision**
-1. HR enters the effective date and the annual base, allowances and deductions.
+1. HR enters the effective date, the annual base, allowances and deductions, and a reason.
 2. The date is validated: no earlier than `joined_on`, no later than `terminated_on`, and not already used for this employee. The revision is saved as immutable. Existing payroll runs aren't touched.
 
 **Terminate**
 1. HR picks the last working day.
-2. The date is validated: the employee isn't already terminated, and the date is no earlier than `joined_on` or the latest revision's date and not in a locked month. It's saved and can't be changed afterwards.
+2. The date is validated: the employee isn't already terminated, and the date is no earlier than `joined_on` and not in a locked month. Future revisions don't block it. It's saved and can't be changed afterwards.
 
 ## 7. Key decisions
 
 | Decision | Reason |
 |---|---|
-| Payroll is stored, with a snapshot on each entry | A paid month must never change. The snapshot keeps locked months fixed even after later revisions or tax-rate changes. |
+| Payroll entries are the only stored payroll, and adjustments live on them | A paid month must never change. An entry holds the revision used, the tax rate and the calculated amounts, so locked months stay fixed. Keeping adjustments on the entry avoids a separate table and matching it by month. |
 | Revisions are immutable | They give a complete salary history, and a payroll entry can safely point to the revision it used. |
 | One app serves the API and the React build | A single deployment and a single domain, so no cross-origin setup is needed and auth can use a session cookie. |
 | Business logic lives in services | Controllers stay thin, and the rules can be tested without HTTP. |
@@ -208,3 +218,4 @@ The UI only formats and displays values. Every amount comes from the API.
 - Gems for Excel read/write and pagination. Each needs approval.
 - What exactly Rails 8's authentication generator creates.
 - Whether Rails returns the generated `annual_gross` value right after insert, or whether the record has to be reloaded.
+- Whether `upsert_all` with `update_only` in the installed Rails version keeps HR's bonus, deduction and note untouched on recalculation.
