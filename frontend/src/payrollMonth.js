@@ -13,3 +13,7 @@ export function monthLabel(param) {
 export function findRun(runs, month) {
   return runs.find((run) => run.month === month)
 }
+
+export function missingRunMessage(param) {
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(param) ? `No payroll for ${monthLabel(param)}.` : 'No payroll for this month.'
+}

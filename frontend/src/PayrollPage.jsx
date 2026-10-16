@@ -5,7 +5,7 @@ import { api, download } from './api.js'
 import AdjustmentModal from './AdjustmentModal.jsx'
 import { formErrorUpdate } from './formErrors.js'
 import { formatMoney } from './format.js'
-import { findRun, monthLabel, toMonthParam } from './payrollMonth.js'
+import { findRun, missingRunMessage, monthLabel, toMonthParam } from './payrollMonth.js'
 import { saveFile } from './saveFile.js'
 
 function runTags(run) {
@@ -156,6 +156,9 @@ function PayrollPage() {
         ]}
       />
 
+      {month && !run && runs.key === runsReload && !runs.error && (
+        <Alert type="info" showIcon message={missingRunMessage(month)} />
+      )}
       {run && (
         <Card
           title={<Space>{monthLabel(run.month)}{runTags(run)}</Space>}
