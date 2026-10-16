@@ -66,7 +66,7 @@ FROM build AS test
 
 ENV RAILS_ENV="test"
 
-CMD ["bash", "-c", "bin/rails db:prepare && bundle exec rspec"]
+CMD ["bash", "-c", "bin/rails db:create db:schema:load && bundle exec rspec"]
 
 # Final stage for app image
 FROM base
