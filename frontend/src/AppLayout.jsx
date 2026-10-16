@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Alert, Button, Layout, Space, Typography } from 'antd'
+import { Alert, Button, Layout, Menu, Space, Typography } from 'antd'
+import { Link, Outlet, useLocation } from 'react-router'
 import { api } from './api.js'
 
 const { Header, Content } = Layout
@@ -7,6 +8,7 @@ const { Header, Content } = Layout
 function AppLayout({ user, onLogout }) {
   const [loggingOut, setLoggingOut] = useState(false)
   const [error, setError] = useState(null)
+  const location = useLocation()
 
   async function handleLogout() {
     setError(null)
@@ -20,12 +22,21 @@ function AppLayout({ user, onLogout }) {
     }
   }
 
+  const selectedKey = location.pathname.startsWith('/employees') ? 'employees' : null
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography.Title level={4} style={{ color: '#fff', margin: 0 }}>
+      <Header style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+        <Typography.Title level={4} style={{ color: '#fff', margin: 0, whiteSpace: 'nowrap' }}>
           Salary Management
         </Typography.Title>
+        <Menu
+          theme="dark"
+          mode="horizontal"
+          selectedKeys={selectedKey ? [selectedKey] : []}
+          items={[{ key: 'employees', label: <Link to="/employees">Employees</Link> }]}
+          style={{ flex: 1, minWidth: 0 }}
+        />
         <Space>
           <Typography.Text style={{ color: '#fff' }}>{user.email_address}</Typography.Text>
           <Button onClick={handleLogout} loading={loggingOut}>
@@ -35,7 +46,7 @@ function AppLayout({ user, onLogout }) {
       </Header>
       <Content style={{ padding: 24 }}>
         {error && <Alert type="error" message={error} showIcon closable style={{ marginBottom: 16 }} />}
-        <Typography.Text>Welcome.</Typography.Text>
+        <Outlet />
       </Content>
     </Layout>
   )

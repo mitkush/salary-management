@@ -262,6 +262,35 @@ Also align the commit-granularity wording across CLAUDE.md and the review skill.
 - Termination: the locked-month check is noted as a follow-up for payroll.
 - Two stacked PRs instead of one.
 
+## 16. Employees and salary revisions (frontend) and the schema mismatch
+**Prompt:** Build the employee list and detail pages with `react-router` and server-side pagination, as a second PR stacked on the backend PR.
+
+**Claude produced:**
+- **Routing:** `react-router` 8.4. I checked its exports before using it.
+- **Employee list:**
+  - search, filters and pagination, all kept in the URL
+  - a search box that waits 300 ms after you stop typing
+  - loading, empty and error states
+- **Employee detail:**
+  - details, and the revision history with a "Never applied" tag
+  - an "Add revision" modal with a note that revisions can't be edited after saving, only replaced by a new one
+  - a "Terminate" modal that warns it can't be undone
+  - errors from the API (422) shown under the matching form fields
+- **Bugs Claude found in its own diffs before committing:**
+  - the Back button after a search put the old search back into the URL
+  - changing a filter reset the page size
+  - switching from one employee to another briefly showed the previous employee
+- **Lint:** oxlint flagged setting state directly inside an effect, so the loading state is now derived from the data instead.
+- **Schema mismatch on PR 5:**
+  - **What happened:** CI's schema check failed because my local database printed the `reason` check constraint differently from a database built fresh from the migrations, on the same Postgres 16.15. The rule itself was identical.
+  - **What was ruled out:** Claude checked my suggested cause (a migration edited after it ran) and its own guess (the text changes when `schema.rb` is loaded and dumped again), and both were wrong. **The real cause wasn't found.**
+  - **Fix:** rebuild the databases from the migrations and commit the regenerated `schema.rb`.
+
+**I changed:**
+- Asked for the note in the "Add revision" modal that revisions can't be edited after saving.
+- The `initial` reason stays available only through the API, used by the seed and the import, by choice. HR picks increment, promotion, correction or other in the UI.
+- I checked all scenarios in the browser myself.
+
 ## 17. Fixes from the PR 5 review
 **Prompt:** Fix the four should-fix items and the nit from `review PR 5`, test-first. Cap amounts at 1,000,000,000. For two requests racing to save a revision, add a known limitation instead of a database lock.
 
@@ -274,3 +303,20 @@ Also align the commit-granularity wording across CLAUDE.md and the review skill.
 - **How the findings were found:** the review skill's `/code-review` step found the backdated-termination bug and the race. Claude's throwaway specs reproduced every finding before it was reported.
 
 **I changed:** nothing. I accepted all five, chose the 1,000,000,000 cap, and chose a known limitation over a database lock for the race.
+
+## 18. Fixes from the PR 6/8 review, and the first frontend tests
+**Prompt:** Fix the three should-fix bugs and the nit from the PR 6 review on PR 8, which has the same commits but targets `main`. Work test-first. Resolve the `ai-prompts.md` conflict by merging `main` into the branch with a merge commit, without a force-push.
+
+**Claude raised:** the frontend had no test framework, so test-first wasn't possible without new packages. It asked before adding any.
+
+**I decided:** add Vitest, but keep it tight. The buggy search/URL logic moves into plain functions tested with Vitest and no DOM. Testing Library is used only for the network-error case in the modals, because that depends on component state. Setup goes in one chore commit, and `npm test` is added to the CI frontend job.
+
+**Claude produced:**
+- **Setup:** `vitest`, `@testing-library/react`, `@testing-library/dom` (a required peer) and `jsdom`, all dev-only. `npm test` passes when there are no test files, so the setup commit isn't red.
+- **Search pair:** `searchState.js` with a delayed search that reads the current URL when it fires and drops itself if Back changed the search in the meantime. The search box's text is now recorded as belonging to the search it wrote.
+  - These tests failed only because the module didn't exist yet, since the bugs lived in the page's wiring. That's a weaker red than usual.
+- **Modal pair:** `formErrorUpdate` returns a "couldn't reach the server" message for network failures, and shows the API's message when an error matches no field on the form.
+  - The two Testing Library tests failed on the real bug: `TypeError: err.fieldErrors is not a function`, as an unhandled rejection.
+  - Before that, they had failed for the wrong reason, because jsdom has no `ResizeObserver`. A stub fixed the test setup.
+- **Lint:** oxlint flagged a ref read during render (a false alarm). The debouncer is now created in the event handler instead.
+- The review skill's `/code-review` step found all three bugs. Claude confirmed the stale-URL one in react-router 8.4's source.

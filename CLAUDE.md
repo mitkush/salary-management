@@ -25,6 +25,7 @@ A salary management web app for ACME's HR Manager, covering about 10,000 employe
   - freeze time for any date logic
   - use a fixed random seed in `db/seeds.rb`
 - No network calls and no `sleep` in tests.
+- Frontend: Vitest. Put logic in plain JS functions and unit test them without a DOM. Use Testing Library (with `jsdom`, set per file) only when the behaviour depends on component state.
 
 ## Rails conventions
 - Keep controllers thin. Business logic goes in `app/services`: payroll generation, import, insights and salary calculation.
@@ -41,13 +42,14 @@ A salary management web app for ACME's HR Manager, covering about 10,000 employe
 - The UI shows only the last 4 digits of a bank account number.
 
 ## Frontend
-- React with Vite, in plain JavaScript, using Ant Design.
+- React with Vite, in plain JavaScript, using Ant Design and `react-router`. Ask before adding any other package.
+- Keep list filters and pagination in the URL, so Back, Forward and shared links work.
 - No business logic in the UI. Every calculation comes from the API.
 
 ## Commands
 - Setup: `bin/setup --skip-server` and `npm --prefix frontend ci`
 - Run: `bin/dev` (Rails on :3000, Vite on :5173), or `docker compose up --build` (app on :3000)
-- Test: `bundle exec rspec`, or `docker compose run --rm test`
+- Test: `bundle exec rspec`, or `docker compose run --rm test`; frontend: `npm --prefix frontend test`
 - Lint: `bin/rubocop` and `npm --prefix frontend run lint`
 - All backend checks (RuboCop, bundler-audit, Brakeman, RSpec): `bin/ci`
 
