@@ -101,6 +101,14 @@ RSpec.describe "API employee details, revisions and termination", type: :request
         expect(json.dig("error", "details").keys).to contain_exactly("effective_on", "reason", "annual_base")
       end
 
+      it "returns 422 instead of crashing for an amount with too many digits" do
+        post "/api/employees/#{employee.id}/salary_revisions",
+          params: { salary_revision: valid.merge(annual_base: "100000000000") }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(json.dig("error", "details", "annual_base")).to eq([ "must be less than or equal to 1000000000" ])
+      end
+
       it "ignores attributes that can't be set, like annual_gross or employee_id" do
         other = create(:employee)
 

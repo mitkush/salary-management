@@ -55,6 +55,17 @@ RSpec.describe SalaryRevision, type: :model do
     expect(build(:salary_revision, employee: employee, annual_deductions: nil)).not_to be_valid
   end
 
+  it "accepts amounts up to 1,000,000,000 each and rejects anything above" do
+    expect(build(:salary_revision, employee: employee, annual_base: "1000000000", annual_allowances: "1000000000",
+      annual_deductions: "1000000000")).to be_valid
+
+    %i[annual_base annual_allowances annual_deductions].each do |field|
+      revision = build(:salary_revision, employee: employee, field => "1000000000.01")
+      expect(revision).not_to be_valid
+      expect(revision.errors[field]).to include("must be less than or equal to 1000000000")
+    end
+  end
+
   it "gets annual gross from the database as base plus allowances" do
     revision = create(:salary_revision, employee: employee, annual_base: "50000.50", annual_allowances: "1000.25")
 
