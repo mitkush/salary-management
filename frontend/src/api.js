@@ -13,12 +13,16 @@ export function setUnauthorizedHandler(handler) {
   onUnauthorized = handler
 }
 
-export async function api(path, { method = 'GET', body } = {}) {
+export async function api(path, { method = 'GET', body, params } = {}) {
   const headers = { Accept: 'application/json' }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (method !== 'GET' && csrfToken) headers['X-CSRF-Token'] = csrfToken
 
-  const response = await fetch(`/api${path}`, {
+  const query = params ? new URLSearchParams(
+    Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== ''),
+  ).toString() : ''
+
+  const response = await fetch(`/api${path}${query ? `?${query}` : ''}`, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
