@@ -417,3 +417,7 @@ Split into two PRs (not stacked), backend first.
 - **A flaky import spec from PR 10:** the helper didn't keep the temp file alive, so garbage collection could delete it before it was read. Fixed in its own `test:` commit.
 
 **Performance on the 10k seed:** generating 9,329 entries took 1.3 s, recalculating 1.1 s, and exporting 0.7 s.
+- **Review fixes (PR 12), test-first:**
+  - A month generated twice at the same moment now returns 409 instead of 500.
+  - The first payroll run must be for the current or the previous month, so HR can't accidentally start years back and then have to generate every month since.
+  - Specs that made their first run further back were changed to match the new rule, not just to make them pass. The earlier runs are now created directly.

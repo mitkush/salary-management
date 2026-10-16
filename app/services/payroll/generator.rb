@@ -23,6 +23,8 @@ module Payroll
         eligible_employees.in_batches(of: BATCH_SIZE) { |batch| upsert_entries(run, batch.includes(:country).to_a) }
         run
       end
+    rescue ActiveRecord::RecordNotUnique
+      raise NotAllowed, "#{label(@month)} is already being generated."
     end
 
     private
@@ -30,10 +32,18 @@ module Payroll
         raise NotAllowed, "Payroll can't be generated for a future month." if @month > Date.current.beginning_of_month
 
         latest = PayrollRun.latest_month
-        return if latest.nil? || @month == latest
+        return check_first_run! if latest.nil?
+        return if @month == latest
 
         raise NotAllowed, "#{label(@month)} is locked." if @month < latest
         raise NotAllowed, "The next payroll must be for #{label(latest.next_month)}." unless @month == latest.next_month
+      end
+
+      def check_first_run!
+        current = Date.current.beginning_of_month
+        return if @month == current || @month == current.prev_month
+
+        raise NotAllowed, "The first payroll must be for #{label(current)} or #{label(current.prev_month)}."
       end
 
       def eligible_employees

@@ -178,7 +178,7 @@ The UI only formats and displays values. Every amount comes from the API.
 
 **Generate or recalculate payroll**
 1. HR picks a month. If a run already exists for the latest month, the UI asks for confirmation before recalculating.
-2. `PUT /api/payroll_runs/:month` is called. The month is rejected if it's in the future, if it's locked, or if it's a new run that isn't exactly the month after the latest run. The first run ever can be for any month that isn't in the future.
+2. `PUT /api/payroll_runs/:month` is called. The month is rejected if it's in the future, if it's locked, or if it's a new run that isn't exactly the month after the latest run. The first run ever must be for the current or the previous month. A duplicate created at the same moment by another request returns 409.
 3. In one transaction:
    - create the run if it doesn't exist
    - load the employees eligible that month (`joined_on <= month end` and (`terminated_on` is null or `>= month start`)) in batches, with the revision in effect on each employee's last day worked
