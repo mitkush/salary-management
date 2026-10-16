@@ -7,6 +7,21 @@ module Employees
     EMPLOYEE_FIELDS = %w[employee_code full_name department job_title bank_account_number joined_on].freeze
     AMOUNT_FIELDS = %w[annual_base annual_allowances annual_deductions].freeze
     BATCH_SIZE = 1_000
+    MAX_FILE_SIZE = 5.megabytes
+    XLSX_SIGNATURE = "PK\x03\x04".b
+
+    def self.check_upload!(file)
+      raise InvalidFile, "Choose an .xlsx file to upload." unless file.respond_to?(:path) && file.respond_to?(:original_filename)
+      raise InvalidFile, "Only .xlsx files are accepted." unless File.extname(file.original_filename.to_s).casecmp?(".xlsx")
+      raise InvalidFile, "The file is larger than 5 MB." if file.size > MAX_FILE_SIZE
+      raise InvalidFile, "Only .xlsx files are accepted." unless File.binread(file.path, 4) == XLSX_SIGNATURE
+    end
+
+    def self.template
+      package = Axlsx::Package.new
+      package.workbook.add_worksheet(name: "Employees") { |sheet| sheet.add_row(COLUMNS) }
+      package.to_stream.read
+    end
 
     def initialize(path)
       @path = path
