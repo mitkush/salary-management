@@ -38,9 +38,21 @@ export async function api(path, { method = 'GET', body, params } = {}) {
 
   if (data?.csrf_token) csrfToken = data.csrf_token
 
-  if (!response.ok) {
-    if (response.status === 401) onUnauthorized()
-    throw new ApiError(response.status, data?.error)
-  }
+  if (!response.ok) throw failure(response.status, data)
   return data
+}
+
+export async function download(path) {
+  const response = await fetch(`/api${path}`, { credentials: 'same-origin' })
+
+  if (!response.ok) throw failure(response.status, await response.json().catch(() => null))
+
+  const disposition = response.headers.get('Content-Disposition') ?? ''
+  const filename = disposition.match(/filename="([^"]+)"/)?.[1] ?? 'download'
+  return { blob: await response.blob(), filename }
+}
+
+function failure(status, data) {
+  if (status === 401) onUnauthorized()
+  return new ApiError(status, data?.error)
 }
