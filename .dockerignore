@@ -36,3 +36,7 @@
 # Ignore Docker-related files
 /.dockerignore
 /Dockerfile*
+
+/.private/
+/frontend/node_modules/
+/public/spa

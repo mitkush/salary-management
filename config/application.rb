@@ -38,5 +38,7 @@ module SalaryManagement
 
     # Don't generate system test files.
     config.generators.system_tests = nil
+
+    config.x.frontend_index_path = Rails.root.join("public/spa/index.html")
   end
 end

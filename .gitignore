@@ -29,3 +29,5 @@
 
 # Private assessment material, never committed.
 /.private/
+
+/public/spa
