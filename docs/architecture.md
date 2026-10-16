@@ -91,7 +91,7 @@ All money columns are `decimal(12,2)`. Every column is `NOT NULL` unless marked 
 | `users` | `email_address`, `password_digest` | unique `email_address`. Created by Rails 8's authentication generator. The HR login only, not linked to `employees`. |
 | `sessions` | `user_id`, `ip_address`, `user_agent` | foreign key and index on `user_id`. One row per login, deleted on logout. |
 | `countries` | `code` (ISO 2), `name`, `tax_rate decimal(5,4)` | unique `code`, unique `name`, check `tax_rate BETWEEN 0 AND 1` |
-| `employees` | `employee_code`, `full_name`, `country_id`, `department`, `job_title`, `bank_account_number`, `joined_on`, `terminated_on` (nullable) | unique `employee_code`. Indexes on `country_id`, `department`, `job_title`, `terminated_on`. Check `terminated_on >= joined_on`. |
+| `employees` | `employee_code`, `full_name`, `country_id`, `department`, `job_title`, `bank_account_number`, `joined_on`, `terminated_on` (nullable) | unique `employee_code`. Indexes on `country_id`, `department`, `job_title`, `joined_on`, `terminated_on`. Check `terminated_on >= joined_on`. |
 | `salary_revisions` | `employee_id`, `effective_on`, `annual_base`, `annual_allowances`, `annual_deductions`, `annual_gross`, `reason` | unique `(employee_id, effective_on)`, which also serves "latest revision" lookups. Checks that amounts are `>= 0`. `annual_gross` is a stored generated column: `annual_base + annual_allowances`. `reason` is one of `initial`, `increment`, `promotion`, `correction` or `other`, enforced by a check constraint. |
 | `payroll_runs` | `month`, `generated_at` | unique `month`, check that `month` is the 1st |
 | `payroll_entries` | `payroll_run_id`, `employee_id`, `salary_revision_id`, `days_worked`, `monthly_gross`, `monthly_deductions`, `bonus` (default 0), `one_time_deduction` (default 0), `adjustment_note` (nullable), `tax_rate decimal(5,4)`, `tax`, `net` | unique `(payroll_run_id, employee_id)`, index on `employee_id` and `salary_revision_id`. Check that `days_worked` is between 1 and 31 and that `bonus` and `one_time_deduction` are `>= 0`. |
@@ -99,9 +99,9 @@ All money columns are `decimal(12,2)`. Every column is `NOT NULL` unless marked 
 `payroll_entries` is the only stored payroll. It doesn't copy the revision's amounts, because revisions never change and the entry already has `salary_revision_id`. Taxable (`monthly_gross + bonus`) and days in the month (from the run's month) are calculated when needed, so they aren't stored.
 
 **Derived values, not stored:**
-- **Status:** an employee is active if `joined_on <= today` and (`terminated_on` is null or `>= today`). This keeps future joiners out of both the headcount and the salary stats.
+- **Status:** `active` if `joined_on <= today` and (`terminated_on` is null or `>= today`), `upcoming` if `joined_on > today`, `terminated` if `terminated_on < today`. This keeps future joiners out of both the headcount and the salary stats.
 - **Locked month:** a month is locked if it's earlier than `MAX(payroll_runs.month)`.
-- **Current salary:** the latest revision with `effective_on <= today`.
+- **Current salary:** the latest revision with `effective_on` on or before the earlier of today and `terminated_on`.
 
 ## 3. Services
 
@@ -148,13 +148,14 @@ The API returns JSON under `/api`. Every endpoint except `GET` and `POST /api/se
 
 | Status | When |
 |---|---|
+| 400 | Missing request parameters |
 | 401 | Not logged in, or wrong login |
 | 404 | Not found |
 | 409 | A locked month, a run for a future month, or a skipped month |
 | 422 | A validation error, or a missing or invalid CSRF token |
 | 429 | Too many login attempts |
 
-**Lists** return `{ "data": [...], "meta": { "page", "per_page", "total" } }`.
+**Lists** take `page` (maximum 1,000,000) and `per_page` (default 25, maximum 100). Values that aren't whole numbers fall back to the defaults, and return `{ "data": [...], "meta": { "page", "per_page", "total" } }`.
 
 ## 5. Frontend pages
 
@@ -224,9 +225,16 @@ It's a little coarse (e.g. a termination in a later month also triggers it), but
 | Import is synchronous | 10k rows are fast enough within one request. Background jobs would add infrastructure for no benefit. |
 | Locked and status are derived | No flags that can drift out of sync with the data. |
 
+**Seed and performance:**
+- `db/seeds/employee_seeder.rb` creates 6 countries and 10,000 employees with about 15,000 revisions, using a fixed random seed. Dates are calculated from today, so the data is the same for every run on the same day. It's bulk-inserted and takes about 2 seconds.
+- `EXPLAIN ANALYZE` of the dashboard median query on the seeded data took 9 ms. It reads the current revisions through the unique `(employee_id, effective_on)` index. Before Postgres had refreshed its statistics after the bulk insert, the same query took 28 ms.
+- Confirmed: Rails 8.1 returns the generated `annual_gross` right after insert, so no reload is needed.
+
+**Follow-ups:**
+- Payroll feature: add the locked-month check to termination (`Employee#terminate!`). It needs `payroll_runs`, which doesn't exist yet.
+
 **To confirm at setup:**
 - Gems for Excel read/write and pagination. Each needs approval.
-- Whether Rails returns the generated `annual_gross` value right after insert, or whether the record has to be reloaded.
 - Deploy: the VM must use its own `SECRET_KEY_BASE` from its `.env`. The one in `docker-compose.yml` is public and only for local use.
 - Deploy: `RAILS_HOSTS` must be set on the VM. If it's unset, Rails accepts any `Host` header.
 - Deploy: set `HR_PASSWORD` on the VM. The default `password` is public in the README.

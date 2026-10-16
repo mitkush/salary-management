@@ -7,7 +7,7 @@ ACME's HR Manager tracks salaries for 10,000 employees across several countries 
 The HR Manager. There is a single HR login and no other roles.
 
 ## Scope (in build order)
-1. **Employees (read-only) and salary revisions.** Employees come only from the seed script and Excel import. Their details are never edited, and employees are never deleted. The only change allowed is termination. The employee list is read-only, with search and filters. Each employee's detail page shows their salary revision history, an "Add revision" button and a "Terminate" action that takes a date. A salary revision is immutable and has an effective date. Every revision needs a reason: initial, increment, promotion, correction or other. The current salary is the latest revision effective on or before today. A revision:
+1. **Employees (read-only) and salary revisions.** Employees come only from the seed script and Excel import. Their details are never edited, and employees are never deleted. The only change allowed is termination. The employee list is read-only, with search (name or code) and filters (country, department, job title, status). Each employee's detail page shows their salary revision history, an "Add revision" button and a "Terminate" action that takes a date. A salary revision is immutable and has an effective date. Every revision needs a reason: initial, increment, promotion, correction or other. The current salary is the latest revision effective on or before today, or on or before the last working day for someone who has left. Each amount (base, allowances, deductions) can be at most 1,000,000,000. A revision:
    - can't be effective before `joined_on`
    - can't be effective after `terminated_on`
    - can't share an effective date with another revision for the same employee
@@ -36,7 +36,10 @@ The HR Manager. There is a single HR login and no other roles.
 ## Definitions
 - All amounts are in **USD**. Using one currency makes pay comparable across countries.
 - Salary components (base, allowances, deductions) are stored as **annual** amounts.
-- Active employee: `joined_on` is on or before today, and `terminated_on` is null or on or after today. Future joiners aren't active yet.
+- Employee status, derived from the dates:
+  - **Active:** `joined_on` is on or before today, and `terminated_on` is null or on or after today.
+  - **Upcoming:** `joined_on` is after today. Future joiners aren't counted as active yet.
+  - **Terminated:** `terminated_on` is before today.
 - Salary = annual gross = base + allowances. Total salary cost = the sum of annual gross across employees.
 - Proration factor = days worked in the month / calendar days in the month. Days worked run from the later of `joined_on` and the 1st, to the earlier of `terminated_on` and the month's last day, inclusive.
 - Monthly gross = annual gross / 12 × proration factor
@@ -65,6 +68,7 @@ The HR Manager. There is a single HR login and no other roles.
 - Employee details can't be changed after import.
 - The HR login isn't linked to an employee record, so HR can change any salary, including their own.
 - Termination can't be undone, and its date can't be changed.
+- If a termination and a new revision are saved at the same moment, the revision can end up dated after the last working day. It's then marked "never applied", so payroll isn't affected. No database lock is used for this, because there's a single HR user.
 - If a raise is backdated into a locked month, that month's payroll stays as it was paid. The app doesn't calculate arrears automatically. HR adds the difference as a one-time bonus in an open month.
 - The latest month can be recalculated even after it has been paid. Until the next month's run exists, the confirmation dialog is the only safeguard.
 - A salary change in the middle of a month applies to the whole month, using the revision in effect on the last day worked.

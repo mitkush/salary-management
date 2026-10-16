@@ -8,6 +8,7 @@
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
 
-User.find_or_create_by!(email_address: ENV.fetch("HR_EMAIL", "hr@example.com")) do |user|
-  user.password = ENV.fetch("HR_PASSWORD", "password")
-end
+load Rails.root.join("db/seeds/hr_user.rb")
+
+require Rails.root.join("db/seeds/employee_seeder")
+EmployeeSeeder.call
