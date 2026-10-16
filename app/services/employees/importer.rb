@@ -148,11 +148,13 @@ module Employees
 
       def insert(rows)
         rows.each_slice(BATCH_SIZE) do |batch|
-          ids = Employee.insert_all!(batch.map { |a| a.slice(*EMPLOYEE_FIELDS, "country_id") }, returning: %w[id employee_code])
-            .rows.to_h { |id, code| [ code, id ] }
-          SalaryRevision.insert_all!(batch.map do |a|
-            { employee_id: ids.fetch(a["employee_code"]), effective_on: a["joined_on"], reason: "initial", **a.slice(*AMOUNT_FIELDS) }
-          end)
+          ActiveRecord::Base.transaction(requires_new: true) do
+            ids = Employee.insert_all!(batch.map { |a| a.slice(*EMPLOYEE_FIELDS, "country_id") }, returning: %w[id employee_code])
+              .rows.to_h { |id, code| [ code, id ] }
+            SalaryRevision.insert_all!(batch.map do |a|
+              { employee_id: ids.fetch(a["employee_code"]), effective_on: a["joined_on"], reason: "initial", **a.slice(*AMOUNT_FIELDS) }
+            end)
+          end
         end
       end
 
