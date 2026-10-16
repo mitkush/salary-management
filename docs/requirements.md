@@ -69,7 +69,6 @@ The HR Manager. There is a single HR login and no other roles.
 - The HR login isn't linked to an employee record, so HR can change any salary, including their own.
 - Termination can't be undone, and its date can't be changed.
 - Import checks employee codes when it starts. If the same code is created between that check and the save, the import fails with an error instead of reporting the row. Acceptable with a single HR user.
-- If the session has expired, "Download template" downloads the login error instead of the template; logging in again fixes it.
 - If a termination and a new revision are saved at the same moment, the revision can end up dated after the last working day. It's then marked "never applied", so payroll isn't affected. No database lock is used for this, because there's a single HR user.
 - If a raise is backdated into a locked month, that month's payroll stays as it was paid. The app doesn't calculate arrears automatically. HR adds the difference as a one-time bonus in an open month.
 - The latest month can be recalculated even after it has been paid. Until the next month's run exists, the confirmation dialog is the only safeguard.
