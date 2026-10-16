@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_16_151146) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_16_151228) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -23,6 +23,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_151146) do
     t.index ["code"], name: "index_countries_on_code", unique: true
     t.index ["name"], name: "index_countries_on_name", unique: true
     t.check_constraint "tax_rate >= 0::numeric AND tax_rate <= 1::numeric", name: "countries_tax_rate_range"
+  end
+
+  create_table "employees", force: :cascade do |t|
+    t.string "employee_code", null: false
+    t.string "full_name", null: false
+    t.bigint "country_id", null: false
+    t.string "department", null: false
+    t.string "job_title", null: false
+    t.string "bank_account_number", null: false
+    t.date "joined_on", null: false
+    t.date "terminated_on"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["country_id"], name: "index_employees_on_country_id"
+    t.index ["department"], name: "index_employees_on_department"
+    t.index ["employee_code"], name: "index_employees_on_employee_code", unique: true
+    t.index ["job_title"], name: "index_employees_on_job_title"
+    t.index ["joined_on"], name: "index_employees_on_joined_on"
+    t.index ["terminated_on"], name: "index_employees_on_terminated_on"
+    t.check_constraint "terminated_on >= joined_on", name: "employees_terminated_after_joined"
   end
 
   create_table "sessions", force: :cascade do |t|
@@ -42,5 +62,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_151146) do
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
   end
 
+  add_foreign_key "employees", "countries"
   add_foreign_key "sessions", "users"
 end
