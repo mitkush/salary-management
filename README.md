@@ -46,7 +46,8 @@ Open http://localhost:5173. Vite proxies `/api` to Rails. Log in with the demo l
 bundle exec rspec                 # tests
 bin/rubocop                       # Ruby style
 npm --prefix frontend run lint    # frontend lint (oxlint)
+npm --prefix frontend test        # frontend tests (Vitest)
 bin/ci                            # RuboCop, bundler-audit, Brakeman and RSpec in one go
 ```
 
-GitHub Actions runs the backend checks, the frontend lint and build, and a Docker image build on every pull request and push to `main`.
+GitHub Actions runs the backend checks, the frontend lint, tests and build, and a Docker image build on every pull request and push to `main`.
