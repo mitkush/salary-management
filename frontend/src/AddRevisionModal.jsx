@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, DatePicker, Form, InputNumber, Modal, Select } from 'antd'
+import { Alert, DatePicker, Form, InputNumber, Modal, Select, Typography } from 'antd'
 import { api } from './api.js'
 
 const REASONS = ['increment', 'promotion', 'correction', 'other'].map((reason) => ({ value: reason, label: reason }))
@@ -36,6 +36,9 @@ function AddRevisionModal({ employeeId, open, onClose, onSaved }) {
 
   return (
     <Modal title="Add salary revision" open={open} onCancel={close} onOk={form.submit} okText="Save" confirmLoading={saving} destroyOnHidden>
+      <Typography.Paragraph type="secondary">
+        A revision can't be edited after saving. To change it later, add a new revision that replaces it.
+      </Typography.Paragraph>
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
       <Form form={form} layout="vertical" onFinish={handleFinish} requiredMark={false}>
         <Form.Item label="Effective date" name="effective_on" rules={[{ required: true, message: 'Required' }]}>
