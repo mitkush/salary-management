@@ -7,4 +7,5 @@ end
 
 RSpec.configure do |config|
   config.include AuthHelpers, type: :request
+  config.before { Api::SessionsController::RATE_LIMIT_STORE.clear }
 end
