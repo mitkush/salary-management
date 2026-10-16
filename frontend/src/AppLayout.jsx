@@ -22,7 +22,7 @@ function AppLayout({ user, onLogout }) {
     }
   }
 
-  const selectedKey = ['dashboard', 'employees', 'import'].find((key) => location.pathname.startsWith(`/${key}`)) ?? null
+  const selectedKey = ['dashboard', 'employees', 'import', 'countries'].find((key) => location.pathname.startsWith(`/${key}`)) ?? null
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -38,6 +38,7 @@ function AppLayout({ user, onLogout }) {
             { key: 'dashboard', label: <Link to="/dashboard">Dashboard</Link> },
             { key: 'employees', label: <Link to="/employees">Employees</Link> },
             { key: 'import', label: <Link to="/import">Import</Link> },
+            { key: 'countries', label: <Link to="/countries">Countries</Link> },
           ]}
           style={{ flex: 1, minWidth: 0 }}
         />
