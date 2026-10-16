@@ -56,6 +56,18 @@ RSpec.describe "API session", type: :request do
       expect(response).to have_http_status(:unauthorized)
       expect(json.dig("error", "code")).to eq("invalid_credentials")
     end
+
+    it "blocks the 11th login attempt within 3 minutes with 429" do
+      Api::SessionsController::RATE_LIMIT_STORE.clear
+
+      10.times { post "/api/session", params: { email_address: "hr@example.com", password: "wrong" }, as: :json }
+      post "/api/session", params: { email_address: "hr@example.com", password: "s3cret-pass" }, as: :json
+
+      expect(response).to have_http_status(:too_many_requests)
+      expect(json.dig("error", "code")).to eq("too_many_requests")
+    ensure
+      Api::SessionsController::RATE_LIMIT_STORE.clear
+    end
   end
 
   describe "GET /api/session" do
