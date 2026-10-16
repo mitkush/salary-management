@@ -9,3 +9,6 @@
 #   end
 
 load Rails.root.join("db/seeds/hr_user.rb")
+
+require Rails.root.join("db/seeds/employee_seeder")
+EmployeeSeeder.call
