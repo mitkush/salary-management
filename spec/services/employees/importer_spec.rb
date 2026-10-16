@@ -108,6 +108,13 @@ RSpec.describe Employees::Importer do
     expect(Employee.find_by!(employee_code: "EMP90003").status).to eq("upcoming")
   end
 
+  it "leaves no employee behind when saving their revisions fails" do
+    allow(SalaryRevision).to receive(:insert_all!).and_raise(ActiveRecord::StatementInvalid, "boom")
+
+    expect { import([ import_row ]) }.to raise_error(ActiveRecord::StatementInvalid)
+    expect(Employee.where(employee_code: "EMP90001")).not_to exist
+  end
+
   describe "problems with the whole file" do
     it "rejects a file with missing columns" do
       expect { import([ [ "EMP1" ] ], headers: %w[employee_code]) }
