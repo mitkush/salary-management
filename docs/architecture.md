@@ -138,7 +138,7 @@ The API returns JSON under `/api`. Every endpoint except `GET` and `POST /api/se
 | GET | `/api/employee_imports/template` | An empty `.xlsx` with the import headers |
 | GET | `/api/filter_options` | Countries, departments and job titles for the dropdowns |
 | GET | `/api/insights?country_id=&department=&job_title=&group_by=` | `{ summary, groups }`. The summary has headcount, total, min, max, average and median (median rounded to cents). With `group_by=country` or `department`, groups have the same values plus `share` (percent of total cost). An unknown `group_by` returns 400. |
-| GET / PATCH | `/api/countries`, `/api/countries/:id` | List countries and tax rates / update a tax rate |
+| GET / PATCH | `/api/countries`, `/api/countries/:id` | List countries with `tax_rate_percent` / update it with `{ country: { tax_rate_percent } }`. The API works in percent (0–100, at most 2 decimals) and stores the 0–1 fraction. Invalid values return 422 under `tax_rate_percent`. |
 | GET | `/api/payroll_runs` | List runs, with a `locked` flag on each and an `outdated` flag on the open run |
 | PUT | `/api/payroll_runs/:month` | Generate, or recalculate if the run exists (`month` = `2026-10`) |
 | GET | `/api/payroll_runs/:month/entries?page=` | Paginated entries, with the bank account masked |
