@@ -127,6 +127,16 @@ RSpec.describe "API employee details, revisions and termination", type: :request
         expect(json).to eq("error" => { "code" => "bad_request", "message" => "Missing or invalid parameters." })
       end
 
+      it "returns 422 when a simultaneous request saved the same date first" do
+        allow_any_instance_of(ActiveRecord::Validations::UniquenessValidator).to receive(:validate_each)
+
+        post "/api/employees/#{employee.id}/salary_revisions",
+          params: { salary_revision: valid.merge(effective_on: "2025-03-01") }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(json.dig("error", "details", "effective_on")).to eq([ "already has a revision for this employee" ])
+      end
+
       it "returns 404 for an unknown employee" do
         post "/api/employees/0/salary_revisions", params: { salary_revision: valid }, as: :json
 
