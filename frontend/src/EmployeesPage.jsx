@@ -3,9 +3,9 @@ import { Alert, Flex, Input, Select, Table, Tag, Typography } from 'antd'
 import { Link, useSearchParams } from 'react-router'
 import { api } from './api.js'
 import { STATUS_COLORS, formatMoney } from './format.js'
+import { applyFilterChanges, committedSearch, createSearchDebouncer, searchBoxText, typedSearch } from './searchState.js'
 
 const STATUS_OPTIONS = ['active', 'upcoming', 'terminated'].map((status) => ({ value: status, label: status }))
-const KEPT_ON_FILTER_CHANGE = ['q', 'country_id', 'department', 'job_title', 'status', 'per_page']
 
 const columns = [
   {
@@ -28,9 +28,11 @@ function EmployeesPage() {
   const [result, setResult] = useState({ key: null, data: [], meta: { page: 1, per_page: 25, total: 0 }, error: null })
   const [optionsError, setOptionsError] = useState(null)
   const urlQ = searchParams.get('q') ?? ''
-  const [search, setSearch] = useState({ text: urlQ, forQ: urlQ })
-  const searchText = search.forQ === urlQ ? search.text : urlQ
-  const searchTimer = useRef(null)
+  const [search, setSearch] = useState(() => typedSearch(urlQ, urlQ))
+  const searchText = searchBoxText(search, urlQ)
+  const latestParams = useRef(searchParams)
+  const latestSetParams = useRef(setSearchParams)
+  const debouncer = useRef(null)
 
   const query = Object.fromEntries(searchParams)
   const queryKey = searchParams.toString()
@@ -50,19 +52,26 @@ function EmployeesPage() {
     return () => { ignore = true }
   }, [queryKey])
 
-  useEffect(() => () => clearTimeout(searchTimer.current), [])
+  useEffect(() => {
+    latestParams.current = searchParams
+    latestSetParams.current = setSearchParams
+  })
+
+  useEffect(() => () => debouncer.current?.cancel(), [])
 
   function updateFilters(changes) {
-    setSearchParams((params) => {
-      const next = { ...Object.fromEntries(params), ...changes }
-      return Object.fromEntries(Object.entries(next).filter(([key, value]) => KEPT_ON_FILTER_CHANGE.includes(key) && value))
-    })
+    setSearchParams(applyFilterChanges(searchParams, changes))
   }
 
   function handleSearchChange(value) {
-    setSearch({ text: value, forQ: urlQ })
-    clearTimeout(searchTimer.current)
-    searchTimer.current = setTimeout(() => updateFilters({ q: value }), 300)
+    debouncer.current ??= createSearchDebouncer({
+      delay: 300,
+      getParams: () => latestParams.current,
+      setParams: (next) => latestSetParams.current(next),
+      onCommit: (committed) => setSearch(committedSearch(committed)),
+    })
+    setSearch(typedSearch(value, urlQ))
+    debouncer.current.type(value)
   }
 
   function changePage(page, perPage) {
