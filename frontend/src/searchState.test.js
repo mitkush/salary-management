@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   applyFilterChanges,
+  clearFilters,
+  hasFilters,
   committedSearch,
   createSearchDebouncer,
   searchBoxText,
@@ -98,5 +100,18 @@ describe('search box text', () => {
 
   it('shows the URL search when it was changed from outside', () => {
     expect(searchBoxText(typedSearch('smi', ''), 'jones')).toBe('jones')
+  })
+})
+
+describe('clearing filters', () => {
+  it('drops search, filters and page, but keeps the page size and the dashboard view', () => {
+    const params = new URLSearchParams('q=smith&country_id=1&department=Finance&job_title=QA&status=active&page=3&per_page=50&view=department')
+
+    expect(Object.fromEntries(clearFilters(params))).toEqual({ per_page: '50', view: 'department' })
+  })
+
+  it('knows whether any filter or search is set', () => {
+    expect(hasFilters(new URLSearchParams('per_page=50&view=country&page=2'))).toBe(false)
+    expect(hasFilters(new URLSearchParams('status=active'))).toBe(true)
   })
 })

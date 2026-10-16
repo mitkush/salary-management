@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Alert, Card, Col, Empty, Flex, Row, Segmented, Spin, Statistic, Typography } from 'antd'
+import { Alert, Button, Card, Col, Empty, Flex, Row, Segmented, Spin, Statistic, Typography } from 'antd'
 import { Pie } from '@ant-design/charts'
 import { useSearchParams } from 'react-router'
 import { api } from './api.js'
 import EmployeeFilters from './EmployeeFilters.jsx'
 import { formatMoney } from './format.js'
-import { applyFilterChanges } from './searchState.js'
+import { applyFilterChanges, clearFilters, hasFilters } from './searchState.js'
 
 const VIEWS = [
   { value: 'country', label: 'By country' },
@@ -68,6 +68,7 @@ function DashboardPage() {
       <Typography.Text type="secondary">Active employees only. Salary means current annual gross (base + allowances), in USD.</Typography.Text>
       <Flex gap={8} wrap>
         <EmployeeFilters query={query} options={filterOptions} onChange={updateFilters} />
+        {hasFilters(searchParams) && <Button onClick={() => setSearchParams(clearFilters(searchParams))}>Clear filters</Button>}
       </Flex>
       {error && <Alert type="error" message={error} showIcon />}
       <Spin spinning={loading && !error}>

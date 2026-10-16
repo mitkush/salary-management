@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Flex, Input, Select, Table, Tag, Typography } from 'antd'
+import { Alert, Button, Flex, Input, Select, Table, Tag, Typography } from 'antd'
 import { Link, useSearchParams } from 'react-router'
 import { api } from './api.js'
 import EmployeeFilters from './EmployeeFilters.jsx'
 import { STATUS_COLORS, formatMoney } from './format.js'
-import { applyFilterChanges, committedSearch, createSearchDebouncer, searchBoxText, typedSearch } from './searchState.js'
+import { applyFilterChanges, clearFilters, committedSearch, createSearchDebouncer, hasFilters, searchBoxText, typedSearch } from './searchState.js'
 
 const STATUS_OPTIONS = ['active', 'upcoming', 'terminated'].map((status) => ({ value: status, label: status }))
 
@@ -75,6 +75,11 @@ function EmployeesPage() {
     debouncer.current.type(value)
   }
 
+  function handleClearFilters() {
+    debouncer.current?.cancel()
+    setSearchParams(clearFilters(searchParams))
+  }
+
   function changePage(page, perPage) {
     setSearchParams({ ...query, page: String(page), per_page: String(perPage) })
   }
@@ -99,6 +104,7 @@ function EmployeesPage() {
           onChange={(value) => updateFilters({ status: value })}
           style={{ width: 140 }}
         />
+        {hasFilters(searchParams) && <Button onClick={handleClearFilters}>Clear filters</Button>}
       </Flex>
       {error && <Alert type="error" message={error} showIcon />}
       <Table
