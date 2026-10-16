@@ -6,7 +6,7 @@ import { api } from './api.js'
 import EmployeeFilters from './EmployeeFilters.jsx'
 import { formatMoney } from './format.js'
 import { applyFilterChanges, clearFilters, hasFilters } from './searchState.js'
-import { monthLabel, previousMonth, recentMonths } from './payrollMonth.js'
+import { dashboardQuery, monthLabel, monthOptions, previousMonth } from './payrollMonth.js'
 
 const VIEWS = [
   { value: 'country', label: 'By country' },
@@ -41,9 +41,10 @@ function DashboardPage() {
 
   const query = Object.fromEntries(searchParams)
   const view = query.view === 'department' ? 'department' : 'country'
-  const requestKey = `${searchParams.toString()}|${view}`
+  const apiKey = new URLSearchParams(dashboardQuery(searchParams, today)).toString()
+  const requestKey = `${apiKey}|${view}`
   const loading = result.key !== requestKey
-  const trendsKey = new URLSearchParams([...searchParams].filter(([key]) => key !== 'view')).toString()
+  const trendsKey = apiKey
   const error = optionsError ?? result.error
 
   useEffect(() => {
@@ -53,7 +54,6 @@ function DashboardPage() {
   useEffect(() => {
     let ignore = false
     const params = Object.fromEntries(new URLSearchParams(requestKey.split('|')[0]))
-    delete params.view
     api('/insights', { params: { ...params, group_by: view } })
       .then((data) => { if (!ignore) setResult({ key: requestKey, data, error: null }) })
       .catch((err) => { if (!ignore) setResult({ key: requestKey, data: null, error: err.message }) })
@@ -97,7 +97,7 @@ function DashboardPage() {
       <Flex gap={8} wrap align="center">
         <Select
           value={query.as_of ?? previousMonth(today)}
-          options={recentMonths(today, 24)}
+          options={monthOptions(today, query.as_of)}
           onChange={changeMonth}
           style={{ width: 130 }}
         />

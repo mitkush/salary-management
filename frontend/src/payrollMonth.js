@@ -28,3 +28,15 @@ export function recentMonths(today, count) {
 export function previousMonth(today) {
   return toMonthParam(new Date(today.getFullYear(), today.getMonth() - 1, 1))
 }
+
+export function monthOptions(today, selected) {
+  const options = recentMonths(today, 24)
+  if (!selected || options.some((option) => option.value === selected)) return options
+
+  return [...options, { value: selected, label: monthLabel(selected).replace(/^(\w{3})\w*/, '$1') }]
+}
+
+export function dashboardQuery(searchParams, today) {
+  const query = Object.fromEntries([...searchParams].filter(([key, value]) => key !== 'view' && value))
+  return { ...query, as_of: query.as_of ?? previousMonth(today) }
+}
