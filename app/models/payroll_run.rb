@@ -14,6 +14,16 @@ class PayrollRun < ApplicationRecord
     latest.present? && date.beginning_of_month < latest
   end
 
+  def outdated?
+    SalaryRevision.where("created_at > ?", generated_at).where(effective_on: ..month.end_of_month).exists? ||
+      Employee.where("updated_at > ?", generated_at).exists? ||
+      Country.where("updated_at > ?", generated_at).exists?
+  end
+
+  def locked?
+    self.class.locked?(month)
+  end
+
   private
     def month_is_first_day
       errors.add(:month, "must be the first day of the month") if month && month.day != 1

@@ -48,6 +48,8 @@ class Employee < ApplicationRecord
       errors.add(:terminated_on, "can't be blank")
     elsif date < joined_on
       errors.add(:terminated_on, "can't be before the joining date")
+    elsif PayrollRun.locked?(date)
+      errors.add(:terminated_on, "falls in a locked payroll month")
     end
     raise ActiveRecord::RecordInvalid, self if errors.any?
 
