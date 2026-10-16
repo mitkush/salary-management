@@ -10,6 +10,8 @@ class SalaryStatsQuery
     median: "ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY current.annual_gross))::numeric, 2)"
   }.transform_values { |sql| Arel.sql(sql) }.freeze
 
+  SHARE = Arel.sql("ROUND(100.0 * SUM(current.annual_gross) / NULLIF(SUM(SUM(current.annual_gross)) OVER (), 0), 2)")
+
   def initialize(country_id: nil, department: nil, job_title: nil, group_by: nil)
     @filters = { country_id: country_id, department: department, job_title: job_title }.compact_blank
     @group_by = group_by
@@ -26,8 +28,8 @@ class SalaryStatsQuery
       .joins("JOIN employees ON employees.id = current.employee_id JOIN countries ON countries.id = employees.country_id")
       .group(column)
       .order(AGGREGATES[:total].desc, column)
-      .pluck(column, *AGGREGATES.values)
-      .map { |name, *values| { name: name, **AGGREGATES.keys.zip(values).to_h } }
+      .pluck(column, SHARE, *AGGREGATES.values)
+      .map { |name, share, *values| { name: name, share: share, **AGGREGATES.keys.zip(values).to_h } }
   end
 
   private
