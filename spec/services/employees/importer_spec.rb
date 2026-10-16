@@ -115,6 +115,23 @@ RSpec.describe Employees::Importer do
     expect(Employee.where(employee_code: "EMP90001")).not_to exist
   end
 
+  describe ".template" do
+    it "formats the employee_code and bank_account_number columns as text, so Excel keeps long numbers exact" do
+      files = {}
+      Zip::InputStream.open(StringIO.new(described_class.template)) do |zip|
+        while (entry = zip.get_next_entry)
+          files[entry.name] = zip.read
+        end
+      end
+      sheet = Nokogiri::XML(files.fetch("xl/worksheets/sheet1.xml")).remove_namespaces!
+      text_styles = Nokogiri::XML(files.fetch("xl/styles.xml")).remove_namespaces!
+        .xpath("//cellXfs/xf").each_with_index.filter_map { |xf, index| index.to_s if xf["numFmtId"] == "49" }
+
+      text_columns = sheet.xpath("//cols/col").select { |col| text_styles.include?(col["style"]) }.flat_map { |col| (col["min"].to_i..col["max"].to_i).to_a }
+      expect(text_columns).to include(1, 6)
+    end
+  end
+
   describe "problems with the whole file" do
     it "rejects a file with missing columns" do
       expect { import([ [ "EMP1" ] ], headers: %w[employee_code]) }
