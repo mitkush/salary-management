@@ -421,3 +421,24 @@ Split into two PRs (not stacked), backend first.
   - A month generated twice at the same moment now returns 409 instead of 500.
   - The first payroll run must be for the current or the previous month, so HR can't accidentally start years back and then have to generate every month since.
   - Specs that made their first run further back were changed to match the new rule, not just to make them pass. The earlier runs are now created directly.
+
+## 23. Payroll page
+**Prompt:** The payroll page:
+- a month picker and "Generate payroll" (disabled while it runs; asks to confirm before recalculating an existing month)
+- the runs list with locked and outdated tags, and the "please recalculate" message for the open month
+- a paginated entries table with a masked bank account and negative net in red
+- an adjustment modal for the open month, with read-only locked months
+- totals from the API, not calculated in the UI
+- an Excel export downloaded with `fetch` so a 401 goes to login
+- clear 409 messages, Vitest for any logic, and no new package
+
+**Claude flagged:** the API had no month totals, so they were added to the runs endpoint first, as a backend test/feat pair summed in SQL. Gross means monthly gross before bonuses.
+
+**I decided:** also use the new `download()` for the Import page's "Download template", which removes that known limitation.
+
+**Claude produced, test-first where there's logic:**
+- **Run totals** on `GET /api/payroll_runs` and the generate response.
+- **`download()` in `api.js`,** sharing the 401 and error handling with `api()`. It returns the file and the filename from `Content-Disposition`. Tests cover success, 401 going to login, and 404.
+- **Month helpers** `toMonthParam`, `monthLabel` and `findRun`, with tests.
+- **The Payroll page and adjustment modal.** Entries come back from the API after each change, and 409/400 messages appear as an alert with the server's text.
+- **A spec that first failed for the wrong reason:** a factory employee code collided with a fixed `EMP00001`. Fixed in the spec before committing.

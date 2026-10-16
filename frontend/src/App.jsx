@@ -7,6 +7,7 @@ import CountriesPage from './CountriesPage.jsx'
 import EmployeeDetailPage from './EmployeeDetailPage.jsx'
 import EmployeesPage from './EmployeesPage.jsx'
 import ImportPage from './ImportPage.jsx'
+import PayrollPage from './PayrollPage.jsx'
 import LoginPage from './LoginPage.jsx'
 
 const DashboardPage = lazy(() => import('./DashboardPage.jsx'))
@@ -53,6 +54,7 @@ function App() {
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="employees/:id" element={<EmployeeDetailPage />} />
         <Route path="import" element={<ImportPage />} />
+        <Route path="payroll" element={<PayrollPage />} />
         <Route path="countries" element={<CountriesPage />} />
         <Route
           path="*"

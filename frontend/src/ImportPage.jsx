@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Alert, Button, Card, Col, Flex, Row, Space, Statistic, Table, Tag, Typography, Upload } from 'antd'
-import { api } from './api.js'
+import { api, download } from './api.js'
 import { formErrorUpdate } from './formErrors.js'
+import { saveFile } from './saveFile.js'
 
 const rowColumns = [
   { title: 'Row', dataIndex: 'row', width: 80 },
@@ -36,6 +37,15 @@ function ImportPage() {
     }
   }
 
+  async function handleTemplate() {
+    setError(null)
+    try {
+      saveFile(await download('/employee_imports/template'))
+    } catch (err) {
+      setError(formErrorUpdate(err, []).message)
+    }
+  }
+
   return (
     <Flex vertical gap={16}>
       <Typography.Title level={3} style={{ margin: 0 }}>Import employees</Typography.Title>
@@ -45,7 +55,7 @@ function ImportPage() {
         uploaded again.
       </Typography.Paragraph>
       <Space wrap>
-        <Button href="/api/employee_imports/template">Download template</Button>
+        <Button onClick={handleTemplate}>Download template</Button>
         <Upload
           accept=".xlsx"
           maxCount={1}

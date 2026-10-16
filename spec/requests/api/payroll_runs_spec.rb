@@ -50,6 +50,18 @@ RSpec.describe "API payroll runs", type: :request do
       ])
     end
 
+    it "returns each run's totals of gross, tax and net, summed by the server" do
+      create(:employee, employee_code: "EMP00002", country: india, joined_on: Date.new(2025, 1, 1)).tap do |e|
+        create(:salary_revision, employee: e, annual_base: "60000.00", annual_allowances: "0.00", annual_deductions: "0.00")
+      end
+
+      put "/api/payroll_runs/2026-10", as: :json
+      expect(json["totals"]).to eq("gross" => "15000.0", "tax" => "3000.0", "net" => "11000.0")
+
+      get "/api/payroll_runs", as: :json
+      expect(json.first["totals"]).to eq("gross" => "15000.0", "tax" => "3000.0", "net" => "11000.0")
+    end
+
     it "returns 409 for a future, skipped or locked month" do
       put "/api/payroll_runs/2026-11", as: :json
       expect(response).to have_http_status(:conflict)
