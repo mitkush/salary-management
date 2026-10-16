@@ -17,6 +17,13 @@ class Employee < ApplicationRecord
     end
   }
 
+  scope :search, ->(query) {
+    next all if query.blank?
+
+    pattern = "%#{sanitize_sql_like(query.strip)}%"
+    where("full_name ILIKE :pattern OR employee_code ILIKE :pattern", pattern: pattern)
+  }
+
   def status
     today = Date.current
     if joined_on > today then "upcoming"

@@ -7,6 +7,8 @@ Rails.application.routes.draw do
 
   namespace :api do
     resource :session, only: %i[show create destroy]
+    resources :employees, only: %i[index]
+    resource :filter_options, only: %i[show]
   end
 
   # Defines the root path route ("/")

@@ -9,6 +9,12 @@ class SalaryRevision < ApplicationRecord
   validates :annual_base, :annual_allowances, :annual_deductions, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validate :effective_on_within_employment
 
+  scope :current_for, ->(employee_ids, on: Date.current) {
+    where(employee_id: employee_ids, effective_on: ..on)
+      .select("DISTINCT ON (employee_id) salary_revisions.*")
+      .order(:employee_id, effective_on: :desc)
+  }
+
   def readonly?
     persisted?
   end
