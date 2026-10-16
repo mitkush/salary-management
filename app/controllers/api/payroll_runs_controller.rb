@@ -4,16 +4,16 @@ module Api
 
     def index
       latest = PayrollRun.latest_month
-      counts = PayrollEntry.group(:payroll_run_id).count
-      runs = PayrollRun.order(month: :desc)
+      runs = PayrollRun.order(month: :desc).to_a
+      summaries = run_summaries(runs)
 
-      render json: runs.map { |run| run_json(run, latest_month: latest, entries_count: counts.fetch(run.id, 0)) }
+      render json: runs.map { |run| run_json(run, latest_month: latest, summary: summaries[run.id]) }
     end
 
     def update
       run = Payroll::Generator.call(payroll_month(params[:month]))
 
-      render json: run_json(run, latest_month: PayrollRun.latest_month, entries_count: run.entries.count)
+      render json: run_json(run, latest_month: PayrollRun.latest_month, summary: run_summaries([ run ])[run.id])
     end
 
     def export
