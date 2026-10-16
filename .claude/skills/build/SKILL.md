@@ -42,7 +42,7 @@ Edge cases from the requirements need their own specs wherever they apply: month
 - Commit when a meaningful piece is working, e.g. a model with its validations, or a service with its specs. Don't commit after every small step. Each commit should be a meaningful working piece.
 - Before committing:
   - run the full suite
-  - run rubocop and eslint if they're set up
+  - run rubocop and oxlint
   - show me the diff and a single-line conventional message, with no trailer
 - Commit only after I say ok.
 

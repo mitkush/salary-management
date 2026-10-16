@@ -218,4 +218,6 @@ It's a little coarse (e.g. a termination in a later month also triggers it), but
 - Gems for Excel read/write and pagination. Each needs approval.
 - What exactly Rails 8's authentication generator creates.
 - Whether Rails returns the generated `annual_gross` value right after insert, or whether the record has to be reloaded.
+- Deploy: the VM must use its own `SECRET_KEY_BASE` from its `.env`. The one in `docker-compose.yml` is public and only for local use.
+- Deploy: `RAILS_HOSTS` must be set on the VM. If it's unset, Rails accepts any `Host` header.
 - Whether `upsert_all` with `update_only` in the installed Rails version keeps HR's bonus, deduction and note untouched on recalculation.

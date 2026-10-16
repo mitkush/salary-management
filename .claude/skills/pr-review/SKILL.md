@@ -44,7 +44,7 @@ Only check what the diff touches. Skip any area the PR doesn't change.
    - Thin controllers, with logic in services.
    - Clear names.
    - No dead or duplicated code.
-   - Run rubocop and eslint if they're set up, and report only what fails.
+   - Run rubocop and oxlint (`npm --prefix frontend run lint`), and report only what fails.
 10. **Commits:** Conventional format on a single line, no trailers, each commit a meaningful working piece.
 11. **Docs:** Does `docs/requirements.md`, the CLAUDE.md commands section, the README or `docs/ai-prompts.md` need updating?
 12. **Built-in reviews:** Run `/security-review`, then `/code-review` on the PR. Merge their findings into yours, drop duplicates, and verify each one before keeping it. If every changed file is `.md` (a docs-only PR), skip both and say so under **Tests**, with the reason: `/security-review` excludes Markdown and `/code-review` targets code bugs.
@@ -52,7 +52,7 @@ Only check what the diff touches. Skip any area the PR doesn't change.
 ## Rules for findings
 - Report only real issues. Each one needs `file:line` and a short example of what goes wrong, e.g. "joined_on = 2028-02-29 → proration factor 1/28 instead of 1/29".
 - If you aren't sure, list it under Questions. Don't state it as a fact.
-- No style nitpicks that rubocop or eslint already catch.
+- No style nitpicks that rubocop or oxlint already catch.
 
 ## Output
 Use simple points, in this order:
@@ -74,7 +74,7 @@ Use simple points, in this order:
 **Good**
 - 1–2 points
 
-**Tests:** pass/fail counts, plus any failures, rubocop/eslint results and anything that couldn't run (e.g. no test command yet)
+**Tests:** pass/fail counts, plus any failures, rubocop/oxlint results and anything that couldn't run (e.g. no test command yet)
 
 Leave out empty sections.
 
