@@ -55,7 +55,7 @@ RSpec.describe "API payroll runs", type: :request do
       expect(response).to have_http_status(:conflict)
       expect(json).to eq("error" => { "code" => "conflict", "message" => "Payroll can't be generated for a future month." })
 
-      put "/api/payroll_runs/2026-08", as: :json
+      create(:payroll_run, month: Date.new(2026, 8, 1))
       put "/api/payroll_runs/2026-10", as: :json
       expect(response).to have_http_status(:conflict)
       expect(json.dig("error", "message")).to eq("The next payroll must be for September 2026.")

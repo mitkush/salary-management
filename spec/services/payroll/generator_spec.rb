@@ -22,13 +22,28 @@ RSpec.describe Payroll::Generator do
   end
 
   describe "month rules" do
-    it "allows the first run for any month up to the current one" do
+    it "allows the first run for the current or the previous month" do
       person = employee
 
-      run = generate(Date.new(2026, 3, 1))
+      run = generate(Date.new(2026, 9, 1))
 
-      expect(run).to have_attributes(month: Date.new(2026, 3, 1), generated_at: Time.current)
+      expect(run).to have_attributes(month: Date.new(2026, 9, 1), generated_at: Time.current)
       expect(run.entries.map(&:employee)).to eq([ person ])
+      expect { generate(october) }.not_to raise_error
+    end
+
+    it "rejects a first run older than the previous month" do
+      expect { generate(Date.new(2026, 8, 1)) }
+        .to raise_error(described_class::NotAllowed, "The first payroll must be for October 2026 or September 2026.")
+    end
+
+    it "returns a conflict when another request created the same month at the same moment" do
+      create(:payroll_run, month: october)
+      allow(PayrollRun).to receive(:latest_month).and_return(nil)
+      allow(PayrollRun).to receive(:find_or_initialize_by).and_return(PayrollRun.new(month: october))
+      allow_any_instance_of(ActiveRecord::Validations::UniquenessValidator).to receive(:validate_each)
+
+      expect { generate(october) }.to raise_error(described_class::NotAllowed, "October 2026 is already being generated.")
     end
 
     it "rejects a future month" do
@@ -42,20 +57,22 @@ RSpec.describe Payroll::Generator do
     end
 
     it "rejects skipping a month" do
-      generate(Date.new(2026, 8, 1))
+      create(:payroll_run, month: Date.new(2026, 8, 1))
 
       expect { generate(october) }.to raise_error(described_class::NotAllowed, "The next payroll must be for September 2026.")
     end
 
     it "rejects a locked month" do
-      generate(Date.new(2026, 8, 1))
+      create(:payroll_run, month: Date.new(2026, 8, 1))
       generate(Date.new(2026, 9, 1))
 
       expect { generate(Date.new(2026, 8, 1)) }.to raise_error(described_class::NotAllowed, "August 2026 is locked.")
     end
 
     it "creates an empty run for a month with no eligible employees" do
-      expect(generate(Date.new(2000, 1, 1)).entries).to be_empty
+      employee(joined_on: Date.new(2026, 11, 1))
+
+      expect(generate(october).entries).to be_empty
     end
   end
 
