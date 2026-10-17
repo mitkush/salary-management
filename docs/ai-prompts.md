@@ -478,3 +478,24 @@ Split into two PRs (not stacked), backend first.
   - **Donut:** percentages from the API's `share`.
   - **Layout:** the donut and the column chart side by side, the line chart below.
   - **Description:** a shorter line.
+
+## 26. Deployment
+**Done by me on the Oracle VM, outside this Claude Code session.** Claude only recorded it here and updated the docs.
+
+**What happened:**
+- **VM shape:** the Always Free ARM shape (Ampere A1) was out of capacity, so the app runs on the AMD `VM.Standard.E2.1.Micro` (1 GB of RAM, plus 2 GB of swap added).
+- **Firewall:** the iptables rules opening ports 80 and 443 were first added *after* the image's default `REJECT` rule, so they never matched and the site was unreachable. Moving them before the `REJECT` rule fixed it.
+- **Image:** the Docker image is built locally for `linux/amd64` and loaded onto the VM (`docker save` / `docker load`). The 1 GB VM doesn't have to build it, which matches the deploy plan in the architecture doc.
+- **HTTPS:** Caddy provides it automatically for the DuckDNS domain `sal-mgnt.duckdns.org`.
+- **Secrets:** `SECRET_KEY_BASE`, `HR_EMAIL`, `HR_PASSWORD`, `RAILS_HOSTS` and the database password are in `.env` on the VM. The live login is shared with the reviewer separately.
+
+**Earlier checks that mattered here:**
+- The planning stage had flagged that free ARM capacity on Oracle is often unavailable, which is what happened.
+- The deploy checklist built up across the PRs (own `SECRET_KEY_BASE`, `RAILS_HOSTS`, `HR_PASSWORD`, Caddy upload limit, a single Puma process) was followed and marked done.
+
+## 27. Video walkthrough
+**Prompt:** I recorded the demo on Loom; add the link and update the open PR.
+
+**Codex produced:** Replaced the README's video placeholder with the supplied Loom link and prepared the documentation PR update.
+
+**I provided:** The recorded walkthrough at https://www.loom.com/share/e6116eb45d0743ada7752c09a174b50f. No further changes or rejections were requested.

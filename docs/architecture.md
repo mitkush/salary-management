@@ -20,6 +20,12 @@ flowchart LR
 - **Caddy** terminates HTTPS, getting certificates automatically for the DuckDNS domain, and proxies to Rails.
 - **Postgres** runs in its own container, with its data on a Docker volume so it survives redeploys.
 
+**Deployment (live at https://sal-mgnt.duckdns.org):**
+- **VM:** Oracle Cloud Always Free `VM.Standard.E2.1.Micro`, with 1 GB of RAM plus 2 GB of swap.
+- **Containers:** Docker Compose runs Caddy, the app and Postgres, from `/opt/salary-management`.
+- **Image:** built locally for `linux/amd64`, then loaded onto the VM, so the small VM never has to build it.
+- **Secrets:** `SECRET_KEY_BASE`, `HR_EMAIL`, `HR_PASSWORD`, `RAILS_HOSTS` and the database password live in `.env` on the VM, and are never committed.
+
 ## 2. Data model
 
 ```mermaid
@@ -236,10 +242,10 @@ It's a little coarse (e.g. a termination in a later month also triggers it), but
 - Confirmed: `upsert_all` with `update_only` keeps HR's bonus, deduction and note when a month is recalculated (covered by a spec).
 - Payroll on the 10k seed: generating a month (9,329 entries) took 1.3 s, recalculating it 1.1 s, and exporting it 0.7 s (669 KB).
 
-**To confirm at setup:**
-- Gems for Excel read/write and pagination. Each needs approval.
-- Deploy: the VM must use its own `SECRET_KEY_BASE` from its `.env`. The one in `docker-compose.yml` is public and only for local use.
-- Deploy: `RAILS_HOSTS` must be set on the VM. If it's unset, Rails accepts any `Host` header.
-- Deploy: set `HR_PASSWORD` on the VM. The default `password` is public in the README.
-- Deploy: set Caddy's `request_body max_size` (e.g. 6 MB). Rails only checks the 5 MB import limit after the whole upload has arrived.
-- Deploy: leave `WEB_CONCURRENCY` unset, so Puma runs one process. The login rate limit is counted in memory per process, so each extra worker would allow another 10 attempts.
+**Setup and deploy checklist:**
+- [x] Gems for Excel read and write: `roo` and `caxlsx` (approved). Pagination is done by hand, with no gem.
+- [x] Deploy: the VM must use its own `SECRET_KEY_BASE` from its `.env`. The one in `docker-compose.yml` is public and only for local use.
+- [x] Deploy: `RAILS_HOSTS` must be set on the VM. If it's unset, Rails accepts any `Host` header.
+- [x] Deploy: set `HR_PASSWORD` on the VM. The default `password` is public in the README.
+- [x] Deploy: set Caddy's `request_body max_size` (e.g. 6 MB). Rails only checks the 5 MB import limit after the whole upload has arrived.
+- [x] Deploy: leave `WEB_CONCURRENCY` unset, so Puma runs one process. The login rate limit is counted in memory per process, so each extra worker would allow another 10 attempts.
