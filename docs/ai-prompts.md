@@ -492,3 +492,10 @@ Split into two PRs (not stacked), backend first.
 **Earlier checks that mattered here:**
 - The planning stage had flagged that free ARM capacity on Oracle is often unavailable, which is what happened.
 - The deploy checklist built up across the PRs (own `SECRET_KEY_BASE`, `RAILS_HOSTS`, `HR_PASSWORD`, Caddy upload limit, a single Puma process) was followed and marked done.
+
+## 27. Video walkthrough
+**Prompt:** I recorded the demo on Loom; add the link and update the open PR.
+
+**Codex produced:** Replaced the README's video placeholder with the supplied Loom link and prepared the documentation PR update.
+
+**I provided:** The recorded walkthrough at https://www.loom.com/share/e6116eb45d0743ada7752c09a174b50f. No further changes or rejections were requested.

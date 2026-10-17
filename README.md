@@ -4,7 +4,7 @@
 
 A web app for ACME's HR Manager to manage salaries for about 10,000 employees across several countries. It replaces the spreadsheets HR uses today, and answers questions about how the organisation pays people.
 
-**Live demo:** https://sal-mgnt.duckdns.org (login details are shared separately with the reviewer) · **Video walkthrough:** _added soon_
+**Live demo:** https://sal-mgnt.duckdns.org (login details are shared separately with the reviewer) · **Video walkthrough:** [Watch on Loom](https://www.loom.com/share/e6116eb45d0743ada7752c09a174b50f)
 
 ## Features
 
